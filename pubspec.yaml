@@ -1,6 +1,6 @@
 name: blue_ui_app
 description: A Flutter application with aesthetic blue UI and multiple pages.
-publish_to: 'none'
+publish_to: "none"
 version: 1.0.0+1
 
 environment:
@@ -9,18 +9,20 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  
+
   # QR code scanner
   mobile_scanner: ^3.5.4
-  
+
   # URL launcher to open links
   url_launcher: ^6.2.2
-  
+
   # Icons
   cupertino_icons: ^1.0.6
-  
+
   # Animation
   animations: ^2.0.8
+
+  dropdown_button2: ^2.3.9
 
 dev_dependencies:
   flutter_test:
@@ -31,7 +33,7 @@ flutter:
   uses-material-design: true
   assets:
     - assets/metaqrlogo.png
-  
+
   # To add assets to your application, add an assets section:
   # assets:
   #   - images/app_logo.png

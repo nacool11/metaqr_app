@@ -1,3 +1,4 @@
+import 'package:blue_ui_app/dropdown.dart';
 import 'package:flutter/material.dart';
 
 class DescriptionPage extends StatefulWidget {
@@ -9,14 +10,12 @@ class DescriptionPage extends StatefulWidget {
 
 class _DescriptionPageState extends State<DescriptionPage> {
   final TextEditingController _searchController = TextEditingController();
-  String _selectedFunctionality = 'Select Functionality';
-  bool _speciesToggle = false;
-  bool _genomesToggle = false;
+  String? _selectedFunctionality;
+  bool toggle = false;
   bool _dropdownOpen = false;
 
   // Functionality options for Description/ID
   final List<String> _functionalityOptions = [
-    'Select Functionality',
     'Gene ID',
     'Protein ID',
     'GO Terms',
@@ -78,7 +77,8 @@ class _DescriptionPageState extends State<DescriptionPage> {
       ),
       body: SingleChildScrollView(
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(16.0, 16.0, 16.0, 30.0), // Extra bottom padding
+          padding: const EdgeInsets.fromLTRB(
+              16.0, 16.0, 16.0, 30.0), // Extra bottom padding
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -103,7 +103,8 @@ class _DescriptionPageState extends State<DescriptionPage> {
                       crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 12, vertical: 6),
                           decoration: BoxDecoration(
                             color: Colors.blue.shade100,
                             borderRadius: BorderRadius.circular(30),
@@ -118,193 +119,97 @@ class _DescriptionPageState extends State<DescriptionPage> {
                           ),
                         ),
                         const SizedBox(width: 16),
-                        
-                        // Dropdown button
                         Expanded(
-                          child: Stack(
-                            children: [
-                              // Dropdown field
-                              Container(
-                                decoration: BoxDecoration(
-                                  borderRadius: BorderRadius.circular(30),
-                                  border: Border.all(
-                                    color: Colors.blue.shade200,
-                                    width: 1.5,
-                                  ),
-                                  gradient: LinearGradient(
-                                    colors: [Colors.white, Colors.blue.shade50],
-                                    begin: Alignment.topCenter,
-                                    end: Alignment.bottomCenter,
-                                  ),
-                                ),
-                                child: InkWell(
-                                  onTap: () {
-                                    setState(() {
-                                      _dropdownOpen = !_dropdownOpen;
-                                    });
-                                  },
-                                  child: Padding(
-                                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                                    child: Row(
-                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                      children: [
-                                        Text(
-                                          _selectedFunctionality,
-                                          style: TextStyle(
-                                            color: _selectedFunctionality == 'Select Functionality'
-                                                ? Colors.grey
-                                                : Colors.blue.shade700,
-                                            fontWeight: _selectedFunctionality == 'Select Functionality'
-                                                ? FontWeight.normal
-                                                : FontWeight.bold,
-                                          ),
-                                        ),
-                                        Container(
-                                          padding: const EdgeInsets.all(4),
-                                          decoration: BoxDecoration(
-                                            color: Colors.blue.shade100,
-                                            shape: BoxShape.circle,
-                                          ),
-                                          child: Icon(
-                                            _dropdownOpen
-                                                ? Icons.keyboard_arrow_up
-                                                : Icons.keyboard_arrow_down,
-                                            color: Colors.blue.shade700,
-                                            size: 18,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ),
-                              ),
-                              
-                              // Dropdown list
-                              if (_dropdownOpen)
-                                Positioned(
-                                  top: 50,
-                                  left: 0,
-                                  right: 0,
-                                  child: Card(
-                                    elevation: 8,
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(15),
-                                    ),
-                                    child: Container(
-                                      decoration: BoxDecoration(
-                                        gradient: LinearGradient(
-                                          colors: [Colors.blue.shade700, Colors.indigo.shade800],
-                                          begin: Alignment.topLeft,
-                                          end: Alignment.bottomRight,
-                                        ),
-                                        borderRadius: BorderRadius.circular(15),
-                                      ),
-                                      child: ListView.builder(
-                                        shrinkWrap: true,
-                                        padding: EdgeInsets.zero,
-                                        itemCount: _functionalityOptions.length,
-                                        itemBuilder: (context, index) {
-                                          final option = _functionalityOptions[index];
-                                          return Container(
-                                            margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                            decoration: BoxDecoration(
-                                              color: option == _selectedFunctionality 
-                                                  ? Colors.blue.shade400.withOpacity(0.3)
-                                                  : Colors.transparent,
-                                              borderRadius: BorderRadius.circular(10),
-                                            ),
-                                            child: ListTile(
-                                              dense: true,
-                                              title: Text(
-                                                option,
-                                                style: TextStyle(
-                                                  color: Colors.white,
-                                                  fontWeight: option == _selectedFunctionality 
-                                                      ? FontWeight.bold 
-                                                      : FontWeight.normal,
-                                                ),
-                                              ),
-                                              leading: option == _selectedFunctionality
-                                                  ? const Icon(Icons.check_circle, color: Colors.white)
-                                                  : null,
-                                              onTap: () {
-                                                setState(() {
-                                                  _selectedFunctionality = option;
-                                                  _dropdownOpen = false;
-                                                });
-                                              },
-                                            ),
-                                          );
-                                        },
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                            ],
+                          child: CustomDropDown(
+                            itemsList: _functionalityOptions,
+                            onChanged: ({required value}) {
+                              setState(() {
+                                _selectedFunctionality = value;
+                              });
+                            },
+                            selectedValue: _selectedFunctionality,
                           ),
                         ),
                       ],
                     ),
-                    
+
                     const SizedBox(height: 16),
-                    
-                    // Toggle switches
+
+                    // Toggle switches row
                     Row(
-                      mainAxisAlignment: MainAxisAlignment.end,
+                      mainAxisAlignment: MainAxisAlignment.center,
                       children: [
+                        // Species toggle
                         const Text(
                           'species',
                           style: TextStyle(
                             color: Colors.blue,
-                            fontSize: 14,
+                            fontSize: 16,
                           ),
                         ),
-                        const SizedBox(width: 8),
-                        
-                        // Species toggle
-                        Switch(
-                          value: _speciesToggle,
-                          onChanged: (value) {
-                            setState(() {
-                              _speciesToggle = value;
-                            });
-                          },
-                          activeColor: Colors.blue,
-                          activeTrackColor: Colors.blue.shade200,
+
+                        // Custom Toggle Switch for genomes
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 8),
+                          child: GestureDetector(
+                            onTap: () {
+                              setState(() {
+                                toggle = !toggle;
+                              });
+                            },
+                            child: Container(
+                              width: 50,
+                              height: 28,
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(14),
+                                color: Colors.blue.shade200,
+                                border: Border.all(
+                                  color: Colors.grey.shade400,
+                                  width: 0.5,
+                                ),
+                              ),
+                              child: Stack(
+                                children: [
+                                  AnimatedPositioned(
+                                    duration: const Duration(milliseconds: 200),
+                                    curve: Curves.easeInOut,
+                                    left: toggle ? 22 : 0,
+                                    right: toggle ? 0 : 22,
+                                    top: 0,
+                                    bottom: 0,
+                                    child: Container(
+                                      width: 28,
+                                      height: 28,
+                                      decoration: BoxDecoration(
+                                        shape: BoxShape.circle,
+                                        color: Colors.blue.shade600,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
                         ),
-                        
-                        const SizedBox(width: 16),
-                        
+
+                        // Genomes toggle
                         const Text(
                           'genomes',
                           style: TextStyle(
                             color: Colors.blue,
-                            fontSize: 14,
+                            fontSize: 16,
                           ),
-                        ),
-                        const SizedBox(width: 8),
-                        
-                        // Genomes toggle
-                        Switch(
-                          value: _genomesToggle,
-                          onChanged: (value) {
-                            setState(() {
-                              _genomesToggle = value;
-                            });
-                          },
-                          activeColor: Colors.blue,
-                          activeTrackColor: Colors.blue.shade200,
                         ),
                       ],
                     ),
                   ],
                 ),
               ),
-              
+
               const SizedBox(height: 20),
-              
+
               // Search field and buttons row
-              if (_selectedFunctionality != 'Select Functionality') 
+              if (_selectedFunctionality != null)
                 Container(
                   decoration: BoxDecoration(
                     color: Colors.white,
@@ -340,8 +245,9 @@ class _DescriptionPageState extends State<DescriptionPage> {
                             controller: _searchController,
                             decoration: InputDecoration(
                               hintText: 'Enter ID or description keywords...',
-                              prefixIcon: Icon(Icons.search, color: Colors.blue.shade400),
-                              suffixIcon: _searchController.text.isNotEmpty 
+                              prefixIcon: Icon(Icons.search,
+                                  color: Colors.blue.shade400),
+                              suffixIcon: _searchController.text.isNotEmpty
                                   ? IconButton(
                                       icon: const Icon(Icons.clear),
                                       color: Colors.blue.shade400,
@@ -351,15 +257,17 @@ class _DescriptionPageState extends State<DescriptionPage> {
                                     )
                                   : null,
                               border: InputBorder.none,
-                              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
+                              contentPadding: const EdgeInsets.symmetric(
+                                  horizontal: 16, vertical: 18),
                             ),
                           ),
                         ),
                       ),
-                      
+
                       // Action buttons
                       Padding(
-                        padding: const EdgeInsets.only(left: 16, right: 16, bottom: 16),
+                        padding: const EdgeInsets.only(
+                            left: 16, right: 16, bottom: 16),
                         child: Row(
                           children: [
                             // Search button
@@ -375,7 +283,8 @@ class _DescriptionPageState extends State<DescriptionPage> {
                                   shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(30),
                                   ),
-                                  padding: const EdgeInsets.symmetric(vertical: 15),
+                                  padding:
+                                      const EdgeInsets.symmetric(vertical: 15),
                                   elevation: 3,
                                 ),
                                 child: const Row(
@@ -394,10 +303,11 @@ class _DescriptionPageState extends State<DescriptionPage> {
                                 ),
                               ),
                             ),
-                            
+
                             // OR text
                             Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 12),
+                              padding:
+                                  const EdgeInsets.symmetric(horizontal: 12),
                               child: Text(
                                 'or',
                                 style: TextStyle(
@@ -406,7 +316,7 @@ class _DescriptionPageState extends State<DescriptionPage> {
                                 ),
                               ),
                             ),
-                            
+
                             // Upload button
                             Expanded(
                               flex: 3,
@@ -420,7 +330,8 @@ class _DescriptionPageState extends State<DescriptionPage> {
                                   shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(30),
                                   ),
-                                  padding: const EdgeInsets.symmetric(vertical: 15),
+                                  padding:
+                                      const EdgeInsets.symmetric(vertical: 15),
                                   elevation: 3,
                                 ),
                                 child: const Row(
@@ -445,9 +356,9 @@ class _DescriptionPageState extends State<DescriptionPage> {
                     ],
                   ),
                 ),
-              
+
               // Results area
-              if (_selectedFunctionality != 'Select Functionality')
+              if (_selectedFunctionality != null)
                 Padding(
                   padding: const EdgeInsets.only(top: 20),
                   child: Container(
@@ -469,10 +380,14 @@ class _DescriptionPageState extends State<DescriptionPage> {
                         children: [
                           // Results header
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 16, vertical: 8),
                             decoration: BoxDecoration(
                               gradient: LinearGradient(
-                                colors: [Colors.blue.shade300, Colors.blue.shade500],
+                                colors: [
+                                  Colors.blue.shade300,
+                                  Colors.blue.shade500
+                                ],
                                 begin: Alignment.centerLeft,
                                 end: Alignment.centerRight,
                               ),
@@ -494,7 +409,7 @@ class _DescriptionPageState extends State<DescriptionPage> {
                             ),
                           ),
                           const SizedBox(height: 16),
-                          
+
                           // Results content (placeholder)
                           SizedBox(
                             height: 200, // Fixed height for placeholder
@@ -559,6 +474,7 @@ class _DescriptionPageState extends State<DescriptionPage> {
                         const SizedBox(height: 24),
                         Text(
                           'Search by Functional Description',
+                          textAlign: TextAlign.center,
                           style: TextStyle(
                             color: Colors.blue.shade700,
                             fontSize: 20,
@@ -578,7 +494,7 @@ class _DescriptionPageState extends State<DescriptionPage> {
                     ),
                   ),
                 ),
-              
+
               // Extra space at the bottom to prevent overflow
               const SizedBox(height: 30),
             ],

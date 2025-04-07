@@ -1,3 +1,4 @@
+import 'package:blue_ui_app/dropdown.dart';
 import 'package:flutter/material.dart';
 
 class FeatureProfilesPage extends StatefulWidget {
@@ -9,14 +10,12 @@ class FeatureProfilesPage extends StatefulWidget {
 
 class _FeatureProfilesPageState extends State<FeatureProfilesPage> {
   final TextEditingController _searchController = TextEditingController();
-  String _selectedFunctionality = 'Select Functionality';
-  bool _speciesToggle = false;
-  bool _genomesToggle = false;
+  String? _selectedFunctionality;
+  bool toggle = false;
   bool _dropdownOpen = false;
 
   // Functionality options based on the provided list
   final List<String> _functionalityOptions = [
-    'Select Functionality',
     'CAZy',
     'COG',
     'BiGG',
@@ -100,102 +99,14 @@ class _FeatureProfilesPageState extends State<FeatureProfilesPage> {
 
                         // Dropdown button
                         Expanded(
-                          child: Container(
-                            decoration: BoxDecoration(
-                              border: Border.all(color: Colors.blue.shade200),
-                              borderRadius: BorderRadius.circular(30),
-                            ),
-                            child: Stack(
-                              children: [
-                                // Dropdown field
-                                Material(
-                                  color: Colors.transparent,
-                                  child: InkWell(
-                                    onTap: () {
-                                      setState(() {
-                                        _dropdownOpen = !_dropdownOpen;
-                                      });
-                                    },
-                                    borderRadius: BorderRadius.circular(30),
-                                    child: Padding(
-                                      padding: const EdgeInsets.symmetric(
-                                          horizontal: 16, vertical: 10),
-                                      child: Row(
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.spaceBetween,
-                                        children: [
-                                          Text(
-                                            _selectedFunctionality,
-                                            style: TextStyle(
-                                              color: _selectedFunctionality ==
-                                                      'Select Functionality'
-                                                  ? Colors.grey
-                                                  : Colors.black,
-                                            ),
-                                          ),
-                                          Icon(
-                                            Icons.arrow_drop_down,
-                                            color: Colors.blue.shade300,
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  ),
-                                ),
-
-                                // Dropdown menu
-                                if (_dropdownOpen)
-                                  Positioned(
-                                    top: 45,
-                                    left: 0,
-                                    right: 0,
-                                    child: Container(
-                                      decoration: BoxDecoration(
-                                        color: Colors.grey.shade800,
-                                        borderRadius: BorderRadius.circular(10),
-                                        boxShadow: [
-                                          BoxShadow(
-                                            color:
-                                                Colors.black.withOpacity(0.1),
-                                            blurRadius: 4,
-                                            offset: const Offset(0, 2),
-                                          ),
-                                        ],
-                                      ),
-                                      child: ListView.builder(
-                                        shrinkWrap: true,
-                                        padding: EdgeInsets.zero,
-                                        itemCount: _functionalityOptions.length,
-                                        itemBuilder: (context, index) {
-                                          final option =
-                                              _functionalityOptions[index];
-                                          return ListTile(
-                                            dense: true,
-                                            title: Text(
-                                              option,
-                                              style: const TextStyle(
-                                                  color: Colors.white),
-                                            ),
-                                            selected: option ==
-                                                _selectedFunctionality,
-                                            leading:
-                                                option == 'Select Functionality'
-                                                    ? const Icon(Icons.check,
-                                                        color: Colors.white)
-                                                    : null,
-                                            onTap: () {
-                                              setState(() {
-                                                _selectedFunctionality = option;
-                                                _dropdownOpen = false;
-                                              });
-                                            },
-                                          );
-                                        },
-                                      ),
-                                    ),
-                                  ),
-                              ],
-                            ),
+                          child: CustomDropDown(
+                            itemsList: _functionalityOptions,
+                            onChanged: ({required value}) {
+                              setState(() {
+                                _selectedFunctionality = value;
+                              });
+                            },
+                            selectedValue: _selectedFunctionality,
                           ),
                         ),
                       ],
@@ -216,13 +127,13 @@ class _FeatureProfilesPageState extends State<FeatureProfilesPage> {
                           ),
                         ),
 
-                        // Custom Toggle Switch for species
+                        // Custom Toggle Switch for genomes
                         Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 8),
                           child: GestureDetector(
                             onTap: () {
                               setState(() {
-                                _speciesToggle = !_speciesToggle;
+                                toggle = !toggle;
                               });
                             },
                             child: Container(
@@ -230,9 +141,7 @@ class _FeatureProfilesPageState extends State<FeatureProfilesPage> {
                               height: 28,
                               decoration: BoxDecoration(
                                 borderRadius: BorderRadius.circular(14),
-                                color: _speciesToggle
-                                    ? Colors.blue.shade200
-                                    : Colors.grey.shade300,
+                                color: Colors.blue.shade200,
                                 border: Border.all(
                                   color: Colors.grey.shade400,
                                   width: 0.5,
@@ -243,8 +152,8 @@ class _FeatureProfilesPageState extends State<FeatureProfilesPage> {
                                   AnimatedPositioned(
                                     duration: const Duration(milliseconds: 200),
                                     curve: Curves.easeInOut,
-                                    left: _speciesToggle ? 22 : 0,
-                                    right: _speciesToggle ? 0 : 22,
+                                    left: toggle ? 22 : 0,
+                                    right: toggle ? 0 : 22,
                                     top: 0,
                                     bottom: 0,
                                     child: Container(
@@ -252,9 +161,7 @@ class _FeatureProfilesPageState extends State<FeatureProfilesPage> {
                                       height: 28,
                                       decoration: BoxDecoration(
                                         shape: BoxShape.circle,
-                                        color: _speciesToggle
-                                            ? Colors.blue.shade600
-                                            : Colors.grey.shade600,
+                                        color: Colors.blue.shade600,
                                       ),
                                     ),
                                   ),
@@ -263,8 +170,6 @@ class _FeatureProfilesPageState extends State<FeatureProfilesPage> {
                             ),
                           ),
                         ),
-
-                        const SizedBox(width: 24),
 
                         // Genomes toggle
                         const Text(
@@ -272,54 +177,6 @@ class _FeatureProfilesPageState extends State<FeatureProfilesPage> {
                           style: TextStyle(
                             color: Colors.blue,
                             fontSize: 16,
-                          ),
-                        ),
-
-                        // Custom Toggle Switch for genomes
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 8),
-                          child: GestureDetector(
-                            onTap: () {
-                              setState(() {
-                                _genomesToggle = !_genomesToggle;
-                              });
-                            },
-                            child: Container(
-                              width: 50,
-                              height: 28,
-                              decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(14),
-                                color: _genomesToggle
-                                    ? Colors.blue.shade200
-                                    : Colors.grey.shade300,
-                                border: Border.all(
-                                  color: Colors.grey.shade400,
-                                  width: 0.5,
-                                ),
-                              ),
-                              child: Stack(
-                                children: [
-                                  AnimatedPositioned(
-                                    duration: const Duration(milliseconds: 200),
-                                    curve: Curves.easeInOut,
-                                    left: _genomesToggle ? 22 : 0,
-                                    right: _genomesToggle ? 0 : 22,
-                                    top: 0,
-                                    bottom: 0,
-                                    child: Container(
-                                      width: 28,
-                                      height: 28,
-                                      decoration: BoxDecoration(
-                                        shape: BoxShape.circle,
-                                        color: _genomesToggle
-                                            ? Colors.blue.shade600
-                                            : Colors.grey.shade600,
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
                           ),
                         ),
                       ],
@@ -331,7 +188,7 @@ class _FeatureProfilesPageState extends State<FeatureProfilesPage> {
               const SizedBox(height: 50),
 
               // Second card - showing select functionality message
-              if (_selectedFunctionality == 'Select Functionality')
+              if (_selectedFunctionality == null)
                 Container(
                   width: double.infinity,
                   padding: const EdgeInsets.all(30),
@@ -370,6 +227,7 @@ class _FeatureProfilesPageState extends State<FeatureProfilesPage> {
                       // Select a Functionality text
                       const Text(
                         'Get Functional Feature Profiles',
+                        textAlign: TextAlign.center,
                         style: TextStyle(
                           fontSize: 22,
                           fontWeight: FontWeight.bold,
@@ -394,7 +252,7 @@ class _FeatureProfilesPageState extends State<FeatureProfilesPage> {
                 ),
 
               // Search field and buttons (shown when functionality is selected)
-              if (_selectedFunctionality != 'Select Functionality')
+              if (_selectedFunctionality != null)
                 Column(
                   children: [
                     // Search field
