@@ -5,7 +5,6 @@ import 'qr_scanner_page.dart';
 import 'feature_profiles_page.dart';
 import 'annotation_files_page.dart';
 import 'description_page.dart';
-import 'related_species_page.dart';
 
 void main() {
   runApp(const MyApp());
@@ -17,7 +16,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Blue UI App',
+      title: 'Functional Database',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         primarySwatch: Colors.blue,
@@ -44,7 +43,7 @@ class MyApp extends StatelessWidget {
           ),
           focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(20),
-            borderSide: BorderSide(color: Colors.blue, width: 1.5),
+            borderSide: const BorderSide(color: Colors.blue, width: 1.5),
           ),
           contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           filled: true,
@@ -77,7 +76,6 @@ class MyApp extends StatelessWidget {
         '/feature_profiles': (context) => const FeatureProfilesPage(),
         '/annotation_files': (context) => const AnnotationFilesPage(),
         '/description': (context) => const DescriptionPage(),
-        '/related_species': (context) => const RelatedSpeciesPage(),
       },
     );
   }

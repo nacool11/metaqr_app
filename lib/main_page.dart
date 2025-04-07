@@ -5,248 +5,212 @@ class MainPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Option titles
+    final screenWidth = MediaQuery.of(context).size.width;
+    final screenHeight = MediaQuery.of(context).size.height;
+    final safeAreaPadding = MediaQuery.of(context).padding;
+    final availableHeight = screenHeight - safeAreaPadding.top - safeAreaPadding.bottom - 100; // Allow space for bottom navigation bar if present
+    
+    // Option titles - Removed Functionally-related species
     final List<String> optionTitles = [
       'QR Scanner',
       'Functional Feature Profiles',
       'Functional Annotation Files',
       'Functional Description or ID',
-      'Functionally-related species',
     ];
 
-    // Option icons
+    // Option icons - Removed Functionally-related species
     final List<IconData> optionIcons = [
       Icons.qr_code_scanner,
       Icons.featured_play_list,
       Icons.file_copy,
       Icons.description,
-      Icons.category,
     ];
     
-    // Option colors - pastel blue tones
+    // Option colors - Removed Functionally-related species
     final List<Color> optionColors = [
       Colors.blue.shade400,
       Colors.indigo.shade300,
       Colors.lightBlue.shade300,
-      Colors.cyan.shade400,
-      Colors.blue.shade300,
-    ];
-
-    // Background gradients for buttons
-    final List<List<Color>> gradients = [
-      [Colors.blue.shade300, Colors.blue.shade500],
-      [Colors.indigo.shade200, Colors.indigo.shade400],
-      [Colors.lightBlue.shade200, Colors.lightBlue.shade400],
-      [Colors.cyan.shade300, Colors.cyan.shade500],
-      [Colors.blue.shade200, Colors.blue.shade400],
+      Colors.cyan.shade300,
     ];
 
     return Scaffold(
-      extendBodyBehindAppBar: true,
+      backgroundColor: Colors.blue.shade50,
       appBar: AppBar(
-        flexibleSpace: Container(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [Colors.blue.shade400, Colors.blue.shade700],
-            ),
-          ),
-        ),
+        backgroundColor: Colors.blue.shade400,
+        elevation: 0,
         title: const Text(
-          'Functional Database',
+          'MetaQR', // Changed to match the screenshot
           style: TextStyle(
             color: Colors.white,
             fontWeight: FontWeight.bold,
-            fontSize: 20,
+            fontSize: 24, // Increased size to match screenshot
           ),
         ),
-        iconTheme: const IconThemeData(
-          color: Colors.white,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: Colors.white),
+          onPressed: () {
+            Navigator.pop(context);
+          },
         ),
-        elevation: 0,
       ),
-      body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              Colors.blue.shade100,
-              Colors.blue.shade50,
-              Colors.white,
-            ],
-          ),
-        ),
-        child: SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Welcome section
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(20),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.blue.shade100.withOpacity(0.5),
-                        blurRadius: 10,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.all(10),
-                            decoration: BoxDecoration(
-                              color: Colors.blue.shade100,
-                              shape: BoxShape.circle,
-                            ),
+      body: SingleChildScrollView(
+        physics: const ClampingScrollPhysics(), // Prevent bouncing
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16.0, 16.0, 16.0, 35.0), // Increased bottom padding to prevent overflow
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Welcome card
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(20),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.blue.shade100.withOpacity(0.3),
+                      blurRadius: 5,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Container(
+                          width: 48,
+                          height: 48,
+                          decoration: BoxDecoration(
+                            color: Colors.blue.shade100,
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Center(
                             child: Icon(
                               Icons.dashboard_customize,
-                              color: Colors.blue.shade700,
+                              color: Colors.blue,
                               size: 24,
                             ),
                           ),
-                          const SizedBox(width: 12),
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const Text(
-                                'Welcome',
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  color: Colors.grey,
-                                ),
-                              ),
-                              Text(
-                                'Select an option',
-                                style: TextStyle(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.blue.shade800,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 16),
-                      Text(
-                        'Choose from the available functional tools below:',
-                        style: TextStyle(
-                          color: Colors.grey.shade700,
-                          fontSize: 14,
                         ),
+                        const SizedBox(width: 16),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              'Welcome',
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: Colors.grey,
+                              ),
+                            ),
+                            Text(
+                              'Select an option',
+                              style: TextStyle(
+                                fontSize: 22,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.blue.shade700,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      'Choose from the available functional tools below:',
+                      style: TextStyle(
+                        color: Colors.grey.shade700,
+                        fontSize: 14,
                       ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
-                
-                const SizedBox(height: 24),
-                
-                // Option cards with different sizes and placements
-                Expanded(
-                  child: CustomScrollView(
-                    slivers: [
-                      SliverToBoxAdapter(
-                        child: Row(
-                          children: [
-                            // Feature Profiles - Larger card
-                            Expanded(
-                              flex: 3,
-                              child: _buildFeatureCard(
-                                context,
-                                title: optionTitles[1],
-                                icon: optionIcons[1],
-                                gradient: gradients[1],
-                                index: 1,
-                                height: 180,
-                              ),
-                            ),
-                            const SizedBox(width: 16),
-                            // QR Scanner - Smaller card
-                            Expanded(
-                              flex: 2,
-                              child: _buildFeatureCard(
-                                context,
-                                title: optionTitles[0],
-                                icon: optionIcons[0],
-                                gradient: gradients[0],
-                                index: 0,
-                                height: 180,
-                              ),
-                            ),
-                          ],
-                        ),
+              ),
+              
+              const SizedBox(height: 24),
+              
+              // First row: Feature Profiles and QR Scanner
+              SizedBox(
+                height: availableHeight * 0.38, // Increased height for better proportion
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    // Functional Feature Profiles - Larger card
+                    Expanded(
+                      flex: 3,
+                      child: _buildFeatureCard(
+                        context,
+                        title: optionTitles[1],
+                        icon: optionIcons[1],
+                        color: optionColors[1],
+                        route: '/feature_profiles',
+                        titleFontSize: 20,
                       ),
-                      const SliverToBoxAdapter(
-                        child: SizedBox(height: 16),
+                    ),
+                    const SizedBox(width: 16),
+                    // QR Scanner - Smaller card with reduced padding
+                    Expanded(
+                      flex: 2,
+                      child: _buildFeatureCard(
+                        context,
+                        title: optionTitles[0],
+                        icon: optionIcons[0],
+                        color: optionColors[0],
+                        route: '/qr_scanner',
+                        titleFontSize: 20,
+                        compactLayout: true,
                       ),
-                      SliverToBoxAdapter(
-                        child: Row(
-                          children: [
-                            // Annotation Files - Medium card
-                            Expanded(
-                              flex: 1,
-                              child: _buildFeatureCard(
-                                context,
-                                title: optionTitles[2],
-                                icon: optionIcons[2],
-                                gradient: gradients[2],
-                                index: 2,
-                                height: 150,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SliverToBoxAdapter(
-                        child: SizedBox(height: 16),
-                      ),
-                      SliverToBoxAdapter(
-                        child: Row(
-                          children: [
-                            // Description/ID - Small card
-                            Expanded(
-                              flex: 2,
-                              child: _buildFeatureCard(
-                                context,
-                                title: optionTitles[3],
-                                icon: optionIcons[3],
-                                gradient: gradients[3],
-                                index: 3,
-                                height: 140,
-                              ),
-                            ),
-                            const SizedBox(width: 16),
-                            // Related Species - Medium card
-                            Expanded(
-                              flex: 3,
-                              child: _buildFeatureCard(
-                                context,
-                                title: optionTitles[4],
-                                icon: optionIcons[4],
-                                gradient: gradients[4],
-                                index: 4,
-                                height: 140,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
-              ],
-            ),
+              ),
+              
+              const SizedBox(height: 16),
+              
+              // Second row: Annotation Files and Description/ID
+              SizedBox(
+                height: availableHeight * 0.38, // Increased height for better proportion
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    // Functional Annotation Files - First card
+                    Expanded(
+                      flex: 1,
+                      child: _buildFeatureCard(
+                        context,
+                        title: optionTitles[2],
+                        icon: optionIcons[2],
+                        color: optionColors[2],
+                        route: '/annotation_files',
+                        titleFontSize: 18,
+                        compactLayout: true,
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    // Functional Description - Second card
+                    Expanded(
+                      flex: 1,
+                      child: _buildFeatureCard(
+                        context,
+                        title: optionTitles[3],
+                        icon: optionIcons[3],
+                        color: optionColors[3],
+                        route: '/description',
+                        titleFontSize: 18,
+                        compactLayout: true,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              
+              // Additional space at bottom to prevent overflow
+              const SizedBox(height: 30),
+            ],
           ),
         ),
       ),
@@ -257,51 +221,31 @@ class MainPage extends StatelessWidget {
     BuildContext context, {
     required String title,
     required IconData icon,
-    required List<Color> gradient,
-    required int index,
-    required double height,
+    required Color color,
+    required String route,
+    double titleFontSize = 20,
+    bool compactLayout = false,
   }) {
     return GestureDetector(
       onTap: () {
-        // Navigate to the appropriate page based on button index
-        switch (index) {
-          case 0:
-            Navigator.pushNamed(context, '/qr_scanner');
-            break;
-          case 1:
-            Navigator.pushNamed(context, '/feature_profiles');
-            break;
-          case 2:
-            Navigator.pushNamed(context, '/annotation_files');
-            break;
-          case 3:
-            Navigator.pushNamed(context, '/description');
-            break;
-          case 4:
-            Navigator.pushNamed(context, '/related_species');
-            break;
-        }
+        Navigator.pushNamed(context, route);
       },
       child: Container(
-        height: height,
         decoration: BoxDecoration(
+          color: color,
           borderRadius: BorderRadius.circular(20),
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: gradient,
-          ),
           boxShadow: [
             BoxShadow(
-              color: gradient[0].withOpacity(0.4),
+              color: color.withOpacity(0.4),
               blurRadius: 8,
               offset: const Offset(0, 4),
             ),
           ],
         ),
         child: Stack(
+          clipBehavior: Clip.none, // Prevent overflow
           children: [
-            // Background design elements
+            // Background circles for decoration - positioned to avoid overflow
             Positioned(
               right: -20,
               bottom: -20,
@@ -315,65 +259,56 @@ class MainPage extends StatelessWidget {
               ),
             ),
             Positioned(
-              left: -10,
-              top: -10,
+              left: 20,
+              top: 20,
               child: Container(
                 width: 60,
                 height: 60,
                 decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.1),
+                  color: Colors.white.withOpacity(0.3),
                   shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  icon,
+                  color: Colors.white,
+                  size: 30,
                 ),
               ),
             ),
             
-            // Content
-            Padding(
-              padding: const EdgeInsets.all(16.0),
+            // Title and tap to view with adjusted padding for smaller cards
+            Positioned(
+              left: compactLayout ? 16 : 20,
+              bottom: compactLayout ? 16 : 20,
+              right: compactLayout ? 8 : 16, // Reduced right padding for compact layout
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Icon with circle background
-                  Container(
-                    padding: const EdgeInsets.all(10),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.2),
-                      shape: BoxShape.circle,
-                    ),
-                    child: Icon(
-                      icon,
-                      color: Colors.white,
-                      size: 24,
-                    ),
-                  ),
-                  const Spacer(),
-                  
-                  // Title
                   Text(
                     title,
-                    style: const TextStyle(
+                    style: TextStyle(
                       color: Colors.white,
                       fontWeight: FontWeight.bold,
-                      fontSize: 16,
+                      fontSize: titleFontSize,
                     ),
+                    maxLines: 2, // Limit to 2 lines for long text
+                    overflow: TextOverflow.ellipsis, // Show ellipsis if text is too long
                   ),
-                  
-                  // Tap to view
-                  const SizedBox(height: 4),
-                  Row(
+                  const SizedBox(height: 6), // Reduced space for compact layout
+                  const Row(
                     children: [
                       Text(
                         'Tap to view',
                         style: TextStyle(
-                          color: Colors.white.withOpacity(0.8),
-                          fontSize: 12,
+                          color: Colors.white,
+                          fontSize: 14,
                         ),
                       ),
-                      const SizedBox(width: 4),
+                      SizedBox(width: 4), // Reduced space
                       Icon(
                         Icons.arrow_forward,
-                        size: 12,
-                        color: Colors.white.withOpacity(0.8),
+                        color: Colors.white,
+                        size: 14, // Smaller icon
                       ),
                     ],
                   ),

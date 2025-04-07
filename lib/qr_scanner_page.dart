@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
+import 'dart:async';
 import 'package:mobile_scanner/mobile_scanner.dart';
+import 'package:url_launcher/url_launcher.dart';
+import 'package:flutter/services.dart';
 
 class QRScannerPage extends StatefulWidget {
   const QRScannerPage({Key? key}) : super(key: key);
@@ -11,47 +14,76 @@ class QRScannerPage extends StatefulWidget {
 class _QRScannerPageState extends State<QRScannerPage> {
   String? _scanResult;
   bool _hasPermission = true;
+  bool _hasLaunched = false; // Track if we've already launched a URL
   MobileScannerController controller = MobileScannerController();
 
   @override
   void dispose() {
     controller.dispose();
+    _hasLaunched = false; // Reset flag when disposed
     super.dispose();
+  }
+
+  // Function to launch URL
+  Future<void> _launchURL(String url) async {
+    try {
+      final Uri uri = Uri.parse(url);
+      if (!await launchUrl(uri, mode: LaunchMode.externalApplication)) {
+        throw Exception('Could not launch $url');
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error opening URL: $e'),
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      }
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: Colors.blue.shade50,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        flexibleSpace: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [Colors.blue.shade300, Colors.blue.shade700],
+            ),
+          ),
+        ),
         elevation: 0,
         title: const Row(
           children: [
             Text(
               'Database',
               style: TextStyle(
-                color: Colors.blue,
+                color: Colors.white,
                 fontWeight: FontWeight.w500,
               ),
             ),
             Text(
               ' > ',
               style: TextStyle(
-                color: Colors.grey,
+                color: Colors.white70,
               ),
             ),
             Text(
               'QR Scanner',
               style: TextStyle(
-                color: Colors.blue,
+                color: Colors.white,
                 fontWeight: FontWeight.w500,
               ),
             ),
           ],
         ),
         iconTheme: const IconThemeData(
-          color: Colors.blue,
+          color: Colors.white,
         ),
         actions: [
           IconButton(
@@ -60,9 +92,9 @@ class _QRScannerPageState extends State<QRScannerPage> {
               builder: (context, state, child) {
                 switch (state as TorchState) {
                   case TorchState.off:
-                    return const Icon(Icons.flash_off, color: Colors.blue);
+                    return const Icon(Icons.flash_off, color: Colors.white);
                   case TorchState.on:
-                    return const Icon(Icons.flash_on, color: Colors.amber);
+                    return const Icon(Icons.flash_on, color: Colors.yellow);
                 }
               },
             ),
@@ -74,9 +106,9 @@ class _QRScannerPageState extends State<QRScannerPage> {
               builder: (context, state, child) {
                 switch (state as CameraFacing) {
                   case CameraFacing.front:
-                    return const Icon(Icons.camera_front, color: Colors.blue);
+                    return const Icon(Icons.camera_front, color: Colors.white);
                   case CameraFacing.back:
-                    return const Icon(Icons.camera_rear, color: Colors.blue);
+                    return const Icon(Icons.camera_rear, color: Colors.white);
                 }
               },
             ),
@@ -103,9 +135,25 @@ class _QRScannerPageState extends State<QRScannerPage> {
                           onDetect: (capture) {
                             final List<Barcode> barcodes = capture.barcodes;
                             for (final barcode in barcodes) {
+                              // Set the scan result text
                               setState(() {
                                 _scanResult = barcode.rawValue;
                               });
+                              
+                              // If it's a URL, automatically launch it
+                              if (!_hasLaunched && barcode.rawValue != null && 
+                                  (barcode.rawValue!.startsWith('http://') || 
+                                   barcode.rawValue!.startsWith('https://'))) {
+                                setState(() {
+                                  _hasLaunched = true; // Set flag to prevent multiple launches
+                                });
+                                
+                                // Pause the scanner to prevent further scanning
+                                controller.stop();
+                                
+                                // Launch the URL directly
+                                _launchURL(barcode.rawValue!);
+                              }
                             }
                           },
                         ),
@@ -162,10 +210,10 @@ class _QRScannerPageState extends State<QRScannerPage> {
                               color: Colors.red.shade50,
                               shape: BoxShape.circle,
                             ),
-                            child: Icon(
-                              Icons.videocam_off,
+                            child: const Icon(
+                              Icons.no_photography,
                               size: 60,
-                              color: Colors.red.shade300,
+                              color: Colors.red,
                             ),
                           ),
                           const SizedBox(height: 16),
@@ -220,44 +268,85 @@ class _QRScannerPageState extends State<QRScannerPage> {
                     borderRadius: BorderRadius.circular(16),
                     border: Border.all(color: Colors.blue.shade100),
                   ),
-                  child: _scanResult != null
-                      ? Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              _scanResult!,
-                              style: const TextStyle(fontSize: 16),
-                            ),
-                            const SizedBox(height: 12),
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.end,
-                              children: [
-                                TextButton.icon(
-                                  onPressed: () {
-                                    // Handle copy to clipboard
-                                  },
-                                  icon: const Icon(Icons.copy),
-                                  label: const Text('Copy'),
-                                  style: TextButton.styleFrom(
-                                    foregroundColor: Colors.blue,
+                  child: Center(
+                    child: _scanResult != null
+                        ? Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            crossAxisAlignment: CrossAxisAlignment.center,
+                            children: [
+                              const Text(
+                                'Scanned QR Code:',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 16,
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                _scanResult!,
+                                style: const TextStyle(fontSize: 16),
+                                textAlign: TextAlign.center,
+                              ),
+                              const SizedBox(height: 16),
+                              if (_hasLaunched && (_scanResult!.startsWith('http://') || 
+                                  _scanResult!.startsWith('https://')))
+                                const Text(
+                                  'Opening link in browser...',
+                                  style: TextStyle(
+                                    color: Colors.green,
+                                    fontStyle: FontStyle.italic,
                                   ),
                                 ),
-                              ],
-                            ),
-                          ],
-                        )
-                      : const Center(
-                          child: Padding(
-                            padding: EdgeInsets.symmetric(vertical: 16.0),
-                            child: Text(
-                              'No QR code detected yet',
-                              style: TextStyle(
-                                color: Colors.grey,
-                                fontStyle: FontStyle.italic,
+                              const SizedBox(height: 16),
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  ElevatedButton.icon(
+                                    onPressed: () {
+                                      // Copy to clipboard
+                                      if (_scanResult != null) {
+                                        Clipboard.setData(ClipboardData(text: _scanResult!));
+                                        ScaffoldMessenger.of(context).showSnackBar(
+                                          const SnackBar(
+                                            content: Text('Copied to clipboard'),
+                                            duration: Duration(seconds: 2),
+                                          ),
+                                        );
+                                      }
+                                    },
+                                    icon: const Icon(Icons.copy),
+                                    label: const Text('Copy'),
+                                  ),
+                                  const SizedBox(width: 16),
+                                  ElevatedButton.icon(
+                                    onPressed: () {
+                                      // Reset scanner and scan again
+                                      setState(() {
+                                        _scanResult = null;
+                                        _hasLaunched = false;
+                                      });
+                                      controller.start();
+                                    },
+                                    icon: const Icon(Icons.qr_code_scanner),
+                                    label: const Text('Scan Again'),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          )
+                        : const Center(
+                            child: Padding(
+                              padding: EdgeInsets.symmetric(vertical: 16.0),
+                              child: Text(
+                                'No QR code detected yet',
+                                style: TextStyle(
+                                  color: Colors.grey,
+                                  fontStyle: FontStyle.italic,
+                                ),
                               ),
                             ),
                           ),
-                        ),
+                  ),
                 ),
               ],
             ),

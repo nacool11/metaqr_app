@@ -34,41 +34,54 @@ class _RelatedSpeciesPageState extends State<RelatedSpeciesPage> {
 
   @override
   Widget build(BuildContext context) {
+    final double screenHeight = MediaQuery.of(context).size.height;
+    final double safeAreaPadding = MediaQuery.of(context).padding.top + MediaQuery.of(context).padding.bottom;
+    final double availableHeight = screenHeight - safeAreaPadding - 100; // Extra space for safety
+    
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: Colors.blue.shade50,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        flexibleSpace: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [Colors.blue.shade300, Colors.blue.shade700],
+            ),
+          ),
+        ),
         elevation: 0,
         title: const Row(
           children: [
             Text(
               'Database',
               style: TextStyle(
-                color: Colors.blue,
+                color: Colors.white,
                 fontWeight: FontWeight.w500,
               ),
             ),
             Text(
               ' > ',
               style: TextStyle(
-                color: Colors.grey,
+                color: Colors.white70,
               ),
             ),
             Text(
               'Functionally-related species',
               style: TextStyle(
-                color: Colors.blue,
+                color: Colors.white,
                 fontWeight: FontWeight.w500,
               ),
             ),
           ],
         ),
         iconTheme: const IconThemeData(
-          color: Colors.blue,
+          color: Colors.white,
         ),
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
+      body: SingleChildScrollView(
+        child: Padding(
+        padding: const EdgeInsets.fromLTRB(16.0, 16.0, 16.0, 30.0), // Extra bottom padding
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -312,6 +325,7 @@ class _RelatedSpeciesPageState extends State<RelatedSpeciesPage> {
             ),
           ],
         ),
+      ),
       ),
     );
   }

@@ -6,7 +6,7 @@ class LandingPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: Colors.blue.shade50,
       body: SafeArea(
         child: Column(
           children: [
@@ -16,7 +16,7 @@ class LandingPage extends StatelessWidget {
               child: Row(
                 children: [
                   Text(
-                    'Functional Database',
+                    'MetaQR',
                     style: TextStyle(
                       fontSize: 24,
                       fontWeight: FontWeight.bold,
@@ -26,17 +26,17 @@ class LandingPage extends StatelessWidget {
                 ],
               ),
             ),
-            
+
             const Spacer(flex: 1),
-            
-            // Center logo or illustration
+
+            // Center logo
             Center(
               child: Container(
                 width: 200,
                 height: 200,
                 decoration: BoxDecoration(
-                  color: Colors.blue.shade50,
-                  shape: BoxShape.circle,
+                  color: Colors.white,
+                  shape: BoxShape.rectangle,
                   boxShadow: [
                     BoxShadow(
                       color: Colors.blue.withOpacity(0.1),
@@ -45,21 +45,24 @@ class LandingPage extends StatelessWidget {
                     ),
                   ],
                 ),
-                child: Icon(
-                  Icons.analytics_rounded,
-                  size: 100,
-                  color: Colors.blue.shade600,
+                // Use Image.asset to display your PNG logo
+                child: Padding(
+                  padding: const EdgeInsets.all(20.0),
+                  child: Image.asset(
+                    'assets/metaqrlogo.png', // Update this path to match your logo's location
+                    fit: BoxFit.contain,
+                  ),
                 ),
               ),
             ),
-            
+
             const SizedBox(height: 40),
-            
+
             // App description
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 40.0),
               child: Text(
-                'Explore functional features, annotations, and related species data',
+                'Explore your Risk Score using a simple QR code',
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontSize: 18,
@@ -67,9 +70,9 @@ class LandingPage extends StatelessWidget {
                 ),
               ),
             ),
-            
+
             const Spacer(flex: 2),
-            
+
             // Continue button
             Padding(
               padding: const EdgeInsets.all(30.0),
