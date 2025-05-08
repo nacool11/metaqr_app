@@ -12,7 +12,7 @@ class _DescriptionPageState extends State<DescriptionPage> {
   final TextEditingController _searchController = TextEditingController();
   String? _selectedFunctionality;
   bool toggle = false;
-  bool _dropdownOpen = false;
+  final bool _dropdownOpen = false;
 
   // Functionality options for Description/ID
   final List<String> _functionalityOptions = [

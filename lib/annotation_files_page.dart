@@ -12,7 +12,7 @@ class _AnnotationFilesPageState extends State<AnnotationFilesPage> {
   final TextEditingController _searchController = TextEditingController();
   String? _selectedFunctionality;
   bool toggle = false;
-  bool _dropdownOpen = false;
+  final bool _dropdownOpen = false;
 
   // Functionality options for Annotation Files
   final List<String> _functionalityOptions = [

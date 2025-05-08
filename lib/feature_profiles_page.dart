@@ -1,3 +1,4 @@
+import 'package:blue_ui_app/api_service.dart';
 import 'package:blue_ui_app/dropdown.dart';
 import 'package:flutter/material.dart';
 
@@ -12,7 +13,7 @@ class _FeatureProfilesPageState extends State<FeatureProfilesPage> {
   final TextEditingController _searchController = TextEditingController();
   String? _selectedFunctionality;
   bool toggle = false;
-  bool _dropdownOpen = false;
+  final bool _dropdownOpen = false;
 
   // Functionality options based on the provided list
   final List<String> _functionalityOptions = [
@@ -31,6 +32,33 @@ class _FeatureProfilesPageState extends State<FeatureProfilesPage> {
   void dispose() {
     _searchController.dispose();
     super.dispose();
+  }
+
+  Future<void> _searchGenomeIDs() async {
+    final organismName = _searchController.text.trim();
+
+    if (organismName.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Please enter an organism name")),
+      );
+      return;
+    }
+
+    try {
+      final payload = [organismName]; // or reorder based on backend requirement
+      final response = await ApiService.getGenomeIDs(payload);
+
+      print("API Response: $response");
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Found \${response.length} results.")),
+      );
+    } catch (e) {
+      print("API error: $e");
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Error fetching genome IDs")),
+      );
+    }
   }
 
   @override
@@ -57,7 +85,6 @@ class _FeatureProfilesPageState extends State<FeatureProfilesPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // First card - with functionality dropdown and toggles
               Container(
                 width: double.infinity,
                 padding: const EdgeInsets.all(16),
@@ -74,10 +101,8 @@ class _FeatureProfilesPageState extends State<FeatureProfilesPage> {
                 ),
                 child: Column(
                   children: [
-                    // Functionality selector row
                     Row(
                       children: [
-                        // Functionality label with blue background
                         Container(
                           padding: const EdgeInsets.symmetric(
                               vertical: 10, horizontal: 16),
@@ -94,10 +119,7 @@ class _FeatureProfilesPageState extends State<FeatureProfilesPage> {
                             ),
                           ),
                         ),
-
                         const SizedBox(width: 12),
-
-                        // Dropdown button
                         Expanded(
                           child: CustomDropDown(
                             itemsList: _functionalityOptions,
@@ -111,14 +133,10 @@ class _FeatureProfilesPageState extends State<FeatureProfilesPage> {
                         ),
                       ],
                     ),
-
                     const SizedBox(height: 24),
-
-                    // Toggle switches row
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        // Species toggle
                         const Text(
                           'species',
                           style: TextStyle(
@@ -126,8 +144,6 @@ class _FeatureProfilesPageState extends State<FeatureProfilesPage> {
                             fontSize: 16,
                           ),
                         ),
-
-                        // Custom Toggle Switch for genomes
                         Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 8),
                           child: GestureDetector(
@@ -170,8 +186,6 @@ class _FeatureProfilesPageState extends State<FeatureProfilesPage> {
                             ),
                           ),
                         ),
-
-                        // Genomes toggle
                         const Text(
                           'genomes',
                           style: TextStyle(
@@ -184,10 +198,7 @@ class _FeatureProfilesPageState extends State<FeatureProfilesPage> {
                   ],
                 ),
               ),
-
               const SizedBox(height: 50),
-
-              // Second card - showing select functionality message
               if (_selectedFunctionality == null)
                 Container(
                   width: double.infinity,
@@ -205,7 +216,6 @@ class _FeatureProfilesPageState extends State<FeatureProfilesPage> {
                   ),
                   child: Column(
                     children: [
-                      // Document icon
                       Container(
                         width: 80,
                         height: 80,
@@ -221,10 +231,7 @@ class _FeatureProfilesPageState extends State<FeatureProfilesPage> {
                           ),
                         ),
                       ),
-
                       const SizedBox(height: 24),
-
-                      // Select a Functionality text
                       const Text(
                         'Get Functional Feature Profiles',
                         textAlign: TextAlign.center,
@@ -234,10 +241,7 @@ class _FeatureProfilesPageState extends State<FeatureProfilesPage> {
                           color: Colors.blue,
                         ),
                       ),
-
                       const SizedBox(height: 16),
-
-                      // Instruction text
                       Text(
                         'Here you will get the the mean derived detection profiles in species-level as well as functional profiles in strain-level. You will have the option to download the profiles for different functional categories like COG, CAZy, BiGG etc.',
                         textAlign: TextAlign.center,
@@ -250,12 +254,9 @@ class _FeatureProfilesPageState extends State<FeatureProfilesPage> {
                     ],
                   ),
                 ),
-
-              // Search field and buttons (shown when functionality is selected)
               if (_selectedFunctionality != null)
                 Column(
                   children: [
-                    // Search field
                     Container(
                       height: 50,
                       decoration: BoxDecoration(
@@ -274,17 +275,21 @@ class _FeatureProfilesPageState extends State<FeatureProfilesPage> {
                         ),
                       ),
                     ),
-
                     const SizedBox(height: 20),
-
-                    // Buttons row
                     Row(
                       children: [
-                        // Search button
                         Expanded(
                           child: ElevatedButton(
                             onPressed: () {
-                              // Handle search
+                              if (toggle == true) {
+                                _searchGenomeIDs();
+                              } else {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                      content: Text(
+                                          "Switch to 'genomes' to search.")),
+                                );
+                              }
                             },
                             style: ElevatedButton.styleFrom(
                               backgroundColor: Colors.blue,
@@ -297,8 +302,6 @@ class _FeatureProfilesPageState extends State<FeatureProfilesPage> {
                             child: const Text('Search'),
                           ),
                         ),
-
-                        // OR text
                         const Padding(
                           padding: EdgeInsets.symmetric(horizontal: 16),
                           child: Text(
@@ -306,8 +309,6 @@ class _FeatureProfilesPageState extends State<FeatureProfilesPage> {
                             style: TextStyle(color: Colors.grey),
                           ),
                         ),
-
-                        // Upload button
                         Expanded(
                           child: ElevatedButton(
                             onPressed: () {
