@@ -15,6 +15,8 @@ class _FeatureProfilesPageState extends State<FeatureProfilesPage> {
   bool toggle = false;
   final bool _dropdownOpen = false;
 
+  List<String> genomResponse = ["ho", "by"];
+
   // Functionality options based on the provided list
   final List<String> _functionalityOptions = [
     'CAZy',
@@ -34,7 +36,11 @@ class _FeatureProfilesPageState extends State<FeatureProfilesPage> {
     super.dispose();
   }
 
+  bool genomeLoading = false;
+
   Future<void> _searchGenomeIDs() async {
+    genomeLoading = true;
+    setState(() {});
     final organismName = _searchController.text.trim();
 
     if (organismName.isEmpty) {
@@ -48,6 +54,11 @@ class _FeatureProfilesPageState extends State<FeatureProfilesPage> {
       final payload = [organismName]; // or reorder based on backend requirement
       final response = await ApiService.getGenomeIDs(payload);
 
+      final dataList = response['absicoccus_porci'];
+
+      genomResponse =
+          List<String>.from(dataList.map((item) => item.toString()));
+
       print("API Response: $response");
 
       ScaffoldMessenger.of(context).showSnackBar(
@@ -59,6 +70,9 @@ class _FeatureProfilesPageState extends State<FeatureProfilesPage> {
         const SnackBar(content: Text("Error fetching genome IDs")),
       );
     }
+
+    genomeLoading = false;
+    setState(() {});
   }
 
   @override
@@ -327,6 +341,22 @@ class _FeatureProfilesPageState extends State<FeatureProfilesPage> {
                         ),
                       ],
                     ),
+                    const SizedBox(height: 30),
+                    genomeLoading
+                        ? CircularProgressIndicator()
+                        : ListView.separated(
+                            physics: NeverScrollableScrollPhysics(),
+                            shrinkWrap: true,
+                            itemCount: genomResponse.length,
+                            itemBuilder: (context, index) {
+                              return ListTile(
+                                // leading: const Icon(Icons.label),
+                                title: Text(genomResponse[index]),
+                              );
+                            },
+                            separatorBuilder: (context, index) =>
+                                const Divider(),
+                          ),
                   ],
                 ),
             ],
