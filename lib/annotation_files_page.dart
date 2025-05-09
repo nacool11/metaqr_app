@@ -357,7 +357,15 @@ class _AnnotationFilesPageState extends State<AnnotationFilesPage> {
                         Expanded(
                           child: ElevatedButton(
                             onPressed: () {
-                              // Handle search
+                              if (toggle == true) {
+                                _searchGenomeIDs();
+                              } else {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                      content: Text(
+                                          "Switch to 'genomes' to search.")),
+                                );
+                              }
                             },
                             style: ElevatedButton.styleFrom(
                               backgroundColor: Colors.blue,
@@ -399,33 +407,35 @@ class _AnnotationFilesPageState extends State<AnnotationFilesPage> {
                         ),
                       ],
                     ),
-                    genomeLoading
-                        ? const CircularProgressIndicator()
-                        : genomResponse == null
-                            ? const SizedBox()
-                            : genomResponse!.isEmpty
-                                ? Container(
-                                    padding: const EdgeInsets.all(16.0),
-                                    alignment: Alignment.center,
-                                    child: const Text(
-                                      'No results found',
-                                      style: TextStyle(
-                                          fontSize: 16, color: Colors.grey),
-                                    ),
-                                  )
-                                : ListView.separated(
-                                    physics:
-                                        const NeverScrollableScrollPhysics(),
-                                    shrinkWrap: true,
-                                    itemCount: genomResponse!.length,
-                                    itemBuilder: (context, index) {
-                                      return ListTile(
-                                        title: Text(genomResponse![index]),
-                                      );
-                                    },
-                                    separatorBuilder: (context, index) =>
-                                        const Divider(),
-                                  )
+                    toggle == false
+                        ? SizedBox()
+                        : genomeLoading
+                            ? const CircularProgressIndicator()
+                            : genomResponse == null
+                                ? const SizedBox()
+                                : genomResponse!.isEmpty
+                                    ? Container(
+                                        padding: const EdgeInsets.all(16.0),
+                                        alignment: Alignment.center,
+                                        child: const Text(
+                                          'No results found',
+                                          style: TextStyle(
+                                              fontSize: 16, color: Colors.grey),
+                                        ),
+                                      )
+                                    : ListView.separated(
+                                        physics:
+                                            const NeverScrollableScrollPhysics(),
+                                        shrinkWrap: true,
+                                        itemCount: genomResponse!.length,
+                                        itemBuilder: (context, index) {
+                                          return ListTile(
+                                            title: Text(genomResponse![index]),
+                                          );
+                                        },
+                                        separatorBuilder: (context, index) =>
+                                            const Divider(),
+                                      )
                   ],
                 ),
             ],
