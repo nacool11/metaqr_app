@@ -15,8 +15,6 @@ class _FeatureProfilesPageState extends State<FeatureProfilesPage> {
   bool toggle = false;
   final bool _dropdownOpen = false;
 
-  List<String> genomResponse = ["ho", "by"];
-
   // Functionality options based on the provided list
   final List<String> _functionalityOptions = [
     'CAZy',
@@ -34,45 +32,6 @@ class _FeatureProfilesPageState extends State<FeatureProfilesPage> {
   void dispose() {
     _searchController.dispose();
     super.dispose();
-  }
-
-  bool genomeLoading = false;
-
-  Future<void> _searchGenomeIDs() async {
-    genomeLoading = true;
-    setState(() {});
-    final organismName = _searchController.text.trim();
-
-    if (organismName.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Please enter an organism name")),
-      );
-      return;
-    }
-
-    try {
-      final payload = [organismName]; // or reorder based on backend requirement
-      final response = await ApiService.getGenomeIDs(payload);
-
-      final dataList = response['absicoccus_porci'];
-
-      genomResponse =
-          List<String>.from(dataList.map((item) => item.toString()));
-
-      print("API Response: $response");
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Found \${response.length} results.")),
-      );
-    } catch (e) {
-      print("API error: $e");
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Error fetching genome IDs")),
-      );
-    }
-
-    genomeLoading = false;
-    setState(() {});
   }
 
   @override
@@ -294,17 +253,7 @@ class _FeatureProfilesPageState extends State<FeatureProfilesPage> {
                       children: [
                         Expanded(
                           child: ElevatedButton(
-                            onPressed: () {
-                              if (toggle == true) {
-                                _searchGenomeIDs();
-                              } else {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                      content: Text(
-                                          "Switch to 'genomes' to search.")),
-                                );
-                              }
-                            },
+                            onPressed: () {},
                             style: ElevatedButton.styleFrom(
                               backgroundColor: Colors.blue,
                               foregroundColor: Colors.white,
@@ -342,21 +291,6 @@ class _FeatureProfilesPageState extends State<FeatureProfilesPage> {
                       ],
                     ),
                     const SizedBox(height: 30),
-                    genomeLoading
-                        ? CircularProgressIndicator()
-                        : ListView.separated(
-                            physics: NeverScrollableScrollPhysics(),
-                            shrinkWrap: true,
-                            itemCount: genomResponse.length,
-                            itemBuilder: (context, index) {
-                              return ListTile(
-                                // leading: const Icon(Icons.label),
-                                title: Text(genomResponse[index]),
-                              );
-                            },
-                            separatorBuilder: (context, index) =>
-                                const Divider(),
-                          ),
                   ],
                 ),
             ],

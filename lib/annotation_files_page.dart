@@ -1,3 +1,4 @@
+import 'package:blue_ui_app/api_service.dart';
 import 'package:blue_ui_app/dropdown.dart';
 import 'package:flutter/material.dart';
 
@@ -13,6 +14,8 @@ class _AnnotationFilesPageState extends State<AnnotationFilesPage> {
   String? _selectedFunctionality;
   bool toggle = false;
   final bool _dropdownOpen = false;
+
+  List<String>? genomResponse = ["ho", "by"];
 
   // Functionality options for Annotation Files
   final List<String> _functionalityOptions = [
@@ -30,6 +33,51 @@ class _AnnotationFilesPageState extends State<AnnotationFilesPage> {
   void dispose() {
     _searchController.dispose();
     super.dispose();
+  }
+
+  bool genomeLoading = false;
+  Future<void> _searchGenomeIDs() async {
+    genomeLoading = true;
+    setState(() {});
+
+    final rawOrganismName = _searchController.text.trim();
+
+    if (rawOrganismName.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Please enter an organism name")),
+      );
+      genomeLoading = false;
+      setState(() {});
+      return;
+    }
+
+    try {
+      final payload = [rawOrganismName];
+      final response = await ApiService.getGenomeIDs(payload);
+
+      // Convert to snake_case key: lowercase + underscores
+      final key = rawOrganismName.toLowerCase().replaceAll(' ', '_');
+
+      final dataList = response[key] ?? [];
+
+      genomResponse =
+          List<String>.from(dataList.map((item) => item.toString()));
+
+      print("API Response: $response");
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Found ${genomResponse!.length} results.")),
+      );
+    } catch (e) {
+      genomResponse = null;
+      print("API error: $e");
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Error fetching genome IDs")),
+      );
+    }
+
+    genomeLoading = false;
+    setState(() {});
   }
 
   @override
@@ -351,6 +399,33 @@ class _AnnotationFilesPageState extends State<AnnotationFilesPage> {
                         ),
                       ],
                     ),
+                    genomeLoading
+                        ? const CircularProgressIndicator()
+                        : genomResponse == null
+                            ? const SizedBox()
+                            : genomResponse!.isEmpty
+                                ? Container(
+                                    padding: const EdgeInsets.all(16.0),
+                                    alignment: Alignment.center,
+                                    child: const Text(
+                                      'No results found',
+                                      style: TextStyle(
+                                          fontSize: 16, color: Colors.grey),
+                                    ),
+                                  )
+                                : ListView.separated(
+                                    physics:
+                                        const NeverScrollableScrollPhysics(),
+                                    shrinkWrap: true,
+                                    itemCount: genomResponse!.length,
+                                    itemBuilder: (context, index) {
+                                      return ListTile(
+                                        title: Text(genomResponse![index]),
+                                      );
+                                    },
+                                    separatorBuilder: (context, index) =>
+                                        const Divider(),
+                                  )
                   ],
                 ),
             ],
