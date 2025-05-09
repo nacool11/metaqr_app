@@ -63,12 +63,18 @@ class _FeatureProfilesPageState extends State<FeatureProfilesPage> {
       );
 
       // Parse the CSV response
-      final rawList = const CsvToListConverter().convert(response.toString());
-      final flat = rawList.first; // ["a", "1", "v", "2"]
+      final rawList =
+          const CsvToListConverter(eol: '\n').convert(response.toString());
+
+      final flatData = rawList.expand((e) => e).toList();
 
       List<List<String>> fixedSpeciesData = [];
-      for (int i = 0; i < flat.length - 1; i += 2) {
-        fixedSpeciesData.add([flat[i].toString(), flat[i + 1].toString()]);
+
+      for (int i = 0; i < flatData.length; i++) {
+        final splitItems = flatData[i].toString().split('\n');
+        for (int j = 0; j < splitItems.length - 1; j += 2) {
+          fixedSpeciesData.add([splitItems[j], splitItems[j + 1]]);
+        }
       }
 
       speciesData = fixedSpeciesData;
@@ -365,16 +371,13 @@ class _FeatureProfilesPageState extends State<FeatureProfilesPage> {
                                 : ListView.separated(
                                     shrinkWrap: true,
                                     physics: NeverScrollableScrollPhysics(),
-                                    itemCount: speciesData!.length - 1,
+                                    itemCount: speciesData!.length,
                                     separatorBuilder: (_, __) => Divider(),
                                     itemBuilder: (context, index) {
-                                      final header = speciesData!.first;
-                                      final row = speciesData![index + 1];
-
+                                      final row = speciesData![index];
                                       return ListTile(
-                                        title: Text("${header[0]}: ${row[0]}"),
-                                        subtitle:
-                                            Text("${header[1]}: ${row[1]}"),
+                                        title: Text(row[0]),
+                                        subtitle: Text(row[1]),
                                       );
                                     },
                                   )
