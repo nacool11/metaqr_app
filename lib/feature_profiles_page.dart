@@ -354,25 +354,31 @@ class _FeatureProfilesPageState extends State<FeatureProfilesPage> {
                             ? SizedBox()
                             : speciesData!.isEmpty
                                 ? Center(child: Text("No results found"))
-                                : SingleChildScrollView(
+                                : ListView.separated(
+                                    shrinkWrap: true,
                                     physics: NeverScrollableScrollPhysics(),
-                                    scrollDirection: Axis.horizontal,
-                                    child: DataTable(
-                                      columns: speciesData!.first
-                                          .map((col) => DataColumn(
-                                              label: Text(col.toString())))
-                                          .toList(),
-                                      rows: speciesData!.skip(1).map(
-                                        (row) {
-                                          return DataRow(
-                                            cells: row
-                                                .map((cell) => DataCell(
-                                                    Text(cell.toString())))
-                                                .toList(),
-                                          );
-                                        },
-                                      ).toList(),
-                                    ),
+                                    itemCount: speciesData!.length -
+                                        1, // excluding header
+                                    separatorBuilder: (_, __) => Divider(),
+                                    itemBuilder: (context, index) {
+                                      final header =
+                                          speciesData!.first; // [Key, Value]
+                                      final row = speciesData![
+                                          index + 1]; // Skip header row
+
+                                      return ListTile(
+                                        title: Text(header[0].toString() + ":"),
+                                        subtitle: Text(row[0].toString()),
+                                        trailing: Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: [
+                                            Text(header[1].toString() + ":"),
+                                            Text(row[1].toString()),
+                                          ],
+                                        ),
+                                      );
+                                    },
                                   )
                   ],
                 ),
