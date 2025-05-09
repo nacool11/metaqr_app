@@ -62,24 +62,26 @@ class _FeatureProfilesPageState extends State<FeatureProfilesPage> {
         'species',
       );
 
-      // Parse the CSV response
-      final rawList =
-          const CsvToListConverter(eol: '\n').convert(response.toString());
+// Example: raw CSV string (from API)
+      final raw = response.toString();
 
-      final flatData = rawList.expand((e) => e).toList();
+// Split by newlines
+      final lines = raw.split('\n');
 
-      List<List<String>> fixedSpeciesData = [];
+// Clean empty lines
+      final cleanedLines =
+          lines.where((line) => line.trim().isNotEmpty).toList();
 
-      for (int i = 0; i < flatData.length; i++) {
-        final splitItems = flatData[i].toString().split('\n');
-        for (int j = 0; j < splitItems.length - 1; j += 2) {
-          fixedSpeciesData.add([splitItems[j], splitItems[j + 1]]);
-        }
-      }
+// Parse each line into two columns assuming they are comma-separated
+      speciesData = cleanedLines
+          .map((line) {
+            final parts = line.split(',');
+            return parts.map((e) => e.trim()).toList();
+          })
+          .where((row) => row.length == 2)
+          .toList();
 
-      speciesData = fixedSpeciesData;
-
-      print("Parsed CSV: $speciesData");
+      print("Parsed speciesData: $speciesData");
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text("Found ${speciesData?.length ?? 0} rows.")),
