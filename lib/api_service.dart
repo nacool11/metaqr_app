@@ -10,7 +10,8 @@ class ApiService {
     headers: {"Content-Type": "application/json"},
     connectTimeout: const Duration(seconds: 10),
     receiveTimeout: const Duration(seconds: 10),
-  ))..interceptors.add(PrettyDioLogger(
+  ))
+    ..interceptors.add(PrettyDioLogger(
         requestHeader: true,
         requestBody: true,
         responseBody: true,
@@ -19,57 +20,65 @@ class ApiService {
         compact: true,
         maxWidth: 90,
         enabled: kDebugMode,
-        filter: (options, args){
-            // don't print requests with uris containing '/posts' 
-            if(options.path.contains('/posts')){
-              return false;
-            }
-            // don't print responses with unit8 list data
-            return !args.isResponse || !args.hasUint8ListData;
+        filter: (options, args) {
+          // don't print requests with uris containing '/posts'
+          if (options.path.contains('/posts')) {
+            return false;
           }
-      ));
+          // don't print responses with unit8 list data
+          return !args.isResponse || !args.hasUint8ListData;
+        }));
 
   // POST: /getGenomeIDs
-  static Future<dynamic> getGenomeIDs(List<String> data) => _postRequest('/getGenomeIDs', data);
+  static Future<dynamic> getGenomeIDs(List<String> data) =>
+      _postRequest('/getGenomeIDs', data);
 
   // POST: /annotationZip
-  static Future<dynamic> getAnnotationZip(Map<String, dynamic> data) => _postRequest('/annotationZip', data);
-
-  // POST: /getFuncMatrixFile
-  static Future<dynamic> getFuncMatrixFile(Map<String, dynamic> data) => _postRequest('/getFuncMatrixFile', data);
+  static Future<dynamic> getAnnotationZip(Map<String, dynamic> data) =>
+      _postRequest('/annotationZip', data);
 
   // GET: /getExactFuncMatches
-  static Future<dynamic> getExactFuncMatches() => _getRequest('/getExactFuncMatches');
+  static Future<dynamic> getExactFuncMatches() =>
+      _getRequest('/getExactFuncMatches');
 
   // GET: /getMMFile
   static Future<dynamic> getMMFile() => _getRequest('/getMMFile');
 
   // GET: /getSpeciesAnalysisHtmls
-  static Future<dynamic> getSpeciesAnalysisHtmls() => _getRequest('/getSpeciesAnalysisHtmls');
+  static Future<dynamic> getSpeciesAnalysisHtmls() =>
+      _getRequest('/getSpeciesAnalysisHtmls');
 
   // GET: /getAnalysisZip
   static Future<dynamic> getAnalysisZip() => _getRequest('/getAnalysisZip');
 
   // GET: /getDescriptionName
-  static Future<dynamic> getDescriptionName() => _getRequest('/getDescriptionName');
+  static Future<dynamic> getDescriptionName() =>
+      _getRequest('/getDescriptionName');
 
   // POST: /getSpeciesNamesFromDescriptions
-  static Future<dynamic> getSpeciesNamesFromDescriptions(Map<String, dynamic> data) => _postRequest('/getSpeciesNamesFromDescriptions', data);
+  static Future<dynamic> getSpeciesNamesFromDescriptions(
+          Map<String, dynamic> data) =>
+      _postRequest('/getSpeciesNamesFromDescriptions', data);
 
   // POST: /getSpeciesNNFile
-  static Future<dynamic> getSpeciesNNFile(Map<String, dynamic> data) => _postRequest('/getSpeciesNNFile', data);
+  static Future<dynamic> getSpeciesNNFile(Map<String, dynamic> data) =>
+      _postRequest('/getSpeciesNNFile', data);
 
   // POST: /mlPipeline
-  static Future<dynamic> mlPipeline(Map<String, dynamic> data) => _postRequest('/mlPipeline', data);
+  static Future<dynamic> mlPipeline(Map<String, dynamic> data) =>
+      _postRequest('/mlPipeline', data);
 
   // GET: /results/{job_id}/sampleid_list
-  static Future<dynamic> getSampleIdList(String jobId) => _getRequest('/results/$jobId/sampleid_list');
+  static Future<dynamic> getSampleIdList(String jobId) =>
+      _getRequest('/results/$jobId/sampleid_list');
 
   // GET: /results/{job_id}/{sample_id}/
-  static Future<dynamic> getSamplePage(String jobId, String sampleId) => _getRequest('/results/$jobId/$sampleId/');
+  static Future<dynamic> getSamplePage(String jobId, String sampleId) =>
+      _getRequest('/results/$jobId/$sampleId/');
 
   // GET: /results/{job_id}/{sample_id}/download
-  static Future<dynamic> downloadZip(String jobId, String sampleId) => _getRequest('/results/$jobId/$sampleId/download');
+  static Future<dynamic> downloadZip(String jobId, String sampleId) =>
+      _getRequest('/results/$jobId/$sampleId/download');
 
   // GET: /
   static Future<dynamic> getRoot() => _getRequest('/');
@@ -91,6 +100,26 @@ class ApiService {
       return response.data;
     } catch (e) {
       throw Exception('GET $endpoint failed: $e');
+    }
+  }
+
+  static Future<dynamic> getFuncMatrixFile(
+  List<String> data,
+    String funcType,
+    String taxanomy,
+  ) async {
+    try {
+      final response = await _dio.post(
+        '/getFuncMatrixFile',
+        data: data,
+        queryParameters: {
+          'func_type': funcType,
+          'taxanomy': taxanomy,
+        },
+      );
+      return response.data;
+    } catch (e) {
+      throw Exception('POST /getFuncMatrixFile failed: $e');
     }
   }
 }

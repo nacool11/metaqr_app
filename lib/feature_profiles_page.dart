@@ -1,6 +1,7 @@
 import 'package:blue_ui_app/api_service.dart';
 import 'package:blue_ui_app/dropdown.dart';
 import 'package:flutter/material.dart';
+import 'package:csv/csv.dart';
 
 class FeatureProfilesPage extends StatefulWidget {
   const FeatureProfilesPage({Key? key}) : super(key: key);
@@ -32,6 +33,52 @@ class _FeatureProfilesPageState extends State<FeatureProfilesPage> {
   void dispose() {
     _searchController.dispose();
     super.dispose();
+  }
+
+  bool speciesLoading = false;
+
+  List<List<dynamic>>? speciesData;
+
+  Future<void> _searchSpecies() async {
+    speciesLoading = true;
+    setState(() {});
+
+    final rawOrganismName = _searchController.text.trim();
+
+    if (rawOrganismName.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Please enter an organism name")),
+      );
+      speciesLoading = false;
+      setState(() {});
+      return;
+    }
+
+    try {
+      final payload = [rawOrganismName];
+      final response = await ApiService.getFuncMatrixFile(
+        payload,
+        _selectedFunctionality!,
+        'species',
+      );
+
+      // Parse the CSV response
+      speciesData = const CsvToListConverter().convert(response.toString());
+
+      print("Parsed CSV: $speciesData");
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Found ${speciesData?.length ?? 0} rows.")),
+      );
+    } catch (e) {
+      print("API error: $e");
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Error fetching species data")),
+      );
+    }
+
+    speciesLoading = false;
+    setState(() {});
   }
 
   @override
@@ -291,6 +338,32 @@ class _FeatureProfilesPageState extends State<FeatureProfilesPage> {
                       ],
                     ),
                     const SizedBox(height: 30),
+                    speciesLoading
+                        ? CircularProgressIndicator()
+                        : speciesData == null
+                            ? SizedBox()
+                            : speciesData!.isEmpty
+                                ? Center(child: Text("No results found"))
+                                : SingleChildScrollView(
+                                    physics: NeverScrollableScrollPhysics(),
+                                    scrollDirection: Axis.horizontal,
+                                    child: DataTable(
+                                      columns: speciesData!.first
+                                          .map((col) => DataColumn(
+                                              label: Text(col.toString())))
+                                          .toList(),
+                                      rows: speciesData!.skip(1).map(
+                                        (row) {
+                                          return DataRow(
+                                            cells: row
+                                                .map((cell) => DataCell(
+                                                    Text(cell.toString())))
+                                                .toList(),
+                                          );
+                                        },
+                                      ).toList(),
+                                    ),
+                                  )
                   ],
                 ),
             ],

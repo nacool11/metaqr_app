@@ -7,10 +7,9 @@ environment:
   sdk: ">=2.17.0 <3.0.0"
 
 dependencies:
-  
   flutter:
     sdk: flutter
-  http: ^0.13.6 
+  http: ^0.13.6
   dio: ^5.4.0
   pretty_dio_logger: ^1.3.1
   # QR code scanner
@@ -26,6 +25,7 @@ dependencies:
   animations: ^2.0.8
 
   dropdown_button2: ^2.3.9
+  csv: ^5.0.2
 
 dev_dependencies:
   flutter_test:
