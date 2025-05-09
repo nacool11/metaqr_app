@@ -18,13 +18,13 @@ class _FeatureProfilesPageState extends State<FeatureProfilesPage> {
 
   // Functionality options based on the provided list
   final List<String> _functionalityOptions = [
-    'CAZy',
+    'cazy',
     'COG',
     'BiGG',
-    'KEGG Module',
+    'KEGG_Module',
     'KEGG Orthologs',
-    'KEGG Reactions',
-    'EC Number',
+    'KEGG_Reaction',
+    'EC',
     'PFAMs',
     'Combined',
   ];
