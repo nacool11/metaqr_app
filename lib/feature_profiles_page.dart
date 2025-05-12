@@ -1,7 +1,6 @@
 import 'package:blue_ui_app/api_service.dart';
 import 'package:blue_ui_app/dropdown.dart';
 import 'package:flutter/material.dart';
-import 'package:csv/csv.dart';
 
 class FeatureProfilesPage extends StatefulWidget {
   const FeatureProfilesPage({Key? key}) : super(key: key);
@@ -14,9 +13,7 @@ class _FeatureProfilesPageState extends State<FeatureProfilesPage> {
   final TextEditingController _searchController = TextEditingController();
   String? _selectedFunctionality;
   bool toggle = false;
-  final bool _dropdownOpen = false;
 
-  // Functionality options based on the provided list
   final List<String> _functionalityOptions = [
     'cazy',
     'COG',
@@ -29,15 +26,25 @@ class _FeatureProfilesPageState extends State<FeatureProfilesPage> {
     'Combined',
   ];
 
+  bool speciesLoading = false;
+  List<List<dynamic>>? speciesData;
+
+  int _currentPage = 0;
+  static const int _itemsPerPage = 30;
+
+  List<List<dynamic>> get _paginatedResults {
+    if (speciesData == null) return [];
+    int start = _currentPage * _itemsPerPage;
+    int end = (_currentPage + 1) * _itemsPerPage;
+    end = end > speciesData!.length ? speciesData!.length : end;
+    return speciesData!.sublist(start, end);
+  }
+
   @override
   void dispose() {
     _searchController.dispose();
     super.dispose();
   }
-
-  bool speciesLoading = false;
-
-  List<List<dynamic>>? speciesData;
 
   Future<void> _searchSpecies() async {
     speciesLoading = true;
@@ -62,17 +69,11 @@ class _FeatureProfilesPageState extends State<FeatureProfilesPage> {
         'species',
       );
 
-// Example: raw CSV string (from API)
       final raw = response.toString();
-
-// Split by newlines
       final lines = raw.split('\n');
-
-// Clean empty lines
       final cleanedLines =
           lines.where((line) => line.trim().isNotEmpty).toList();
 
-// Parse each line into two columns assuming they are comma-separated
       speciesData = cleanedLines
           .map((line) {
             final parts = line.split(',');
@@ -81,13 +82,10 @@ class _FeatureProfilesPageState extends State<FeatureProfilesPage> {
           .where((row) => row.length == 2)
           .toList();
 
-      print("Parsed speciesData: $speciesData");
-
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text("Found ${speciesData?.length ?? 0} rows.")),
       );
     } catch (e) {
-      print("API error: $e");
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("Error fetching species data")),
       );
@@ -111,282 +109,213 @@ class _FeatureProfilesPageState extends State<FeatureProfilesPage> {
             fontWeight: FontWeight.w500,
           ),
         ),
-        iconTheme: const IconThemeData(
-          color: Colors.white,
-        ),
+        iconTheme: const IconThemeData(color: Colors.white),
       ),
-      body: SingleChildScrollView(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(16.0, 16.0, 16.0, 30.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(15),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.grey.withOpacity(0.1),
-                      blurRadius: 4,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
-                ),
-                child: Column(
-                  children: [
-                    Row(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                              vertical: 10, horizontal: 16),
-                          decoration: BoxDecoration(
-                            color: Colors.blue.shade100,
-                            borderRadius: BorderRadius.circular(20),
+      body: Padding(
+        padding: const EdgeInsets.fromLTRB(16.0, 16.0, 16.0, 30.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Dropdown + toggle
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(15),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.grey.withOpacity(0.1),
+                    blurRadius: 4,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: Column(
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            vertical: 10, horizontal: 16),
+                        decoration: BoxDecoration(
+                          color: Colors.blue.shade100,
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: const Text(
+                          'Functionality:',
+                          style: TextStyle(
+                            color: Colors.blue,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
                           ),
-                          child: const Text(
-                            'Functionality:',
-                            style: TextStyle(
-                              color: Colors.blue,
-                              fontWeight: FontWeight.bold,
-                              fontSize: 16,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: CustomDropDown(
+                          itemsList: _functionalityOptions,
+                          onChanged: ({required value}) {
+                            setState(() {
+                              _selectedFunctionality = value;
+                            });
+                          },
+                          selectedValue: _selectedFunctionality,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 24),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Text('species',
+                          style: TextStyle(color: Colors.blue)),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 8),
+                        child: GestureDetector(
+                          onTap: () => setState(() => toggle = !toggle),
+                          child: Container(
+                            width: 50,
+                            height: 28,
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(14),
+                              color: Colors.blue.shade200,
+                              border: Border.all(
+                                  color: Colors.grey.shade400, width: 0.5),
+                            ),
+                            child: Stack(
+                              children: [
+                                AnimatedPositioned(
+                                  duration: const Duration(milliseconds: 200),
+                                  curve: Curves.easeInOut,
+                                  left: toggle ? 22 : 0,
+                                  right: toggle ? 0 : 22,
+                                  top: 0,
+                                  bottom: 0,
+                                  child: Container(
+                                    width: 28,
+                                    height: 28,
+                                    decoration: BoxDecoration(
+                                      shape: BoxShape.circle,
+                                      color: Colors.blue.shade600,
+                                    ),
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
                         ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: CustomDropDown(
-                            itemsList: _functionalityOptions,
-                            onChanged: ({required value}) {
-                              setState(() {
-                                _selectedFunctionality = value;
-                              });
-                            },
-                            selectedValue: _selectedFunctionality,
-                          ),
+                      ),
+                      const Text('genomes',
+                          style: TextStyle(color: Colors.blue)),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 30),
+
+            // Search
+            if (_selectedFunctionality != null) ...[
+              TextField(
+                controller: _searchController,
+                decoration: InputDecoration(
+                  hintText: 'Enter the Organism Name...',
+                  prefixIcon: const Icon(Icons.search, color: Colors.grey),
+                  filled: true,
+                  fillColor: Colors.white,
+                  border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(30)),
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 16),
+                ),
+              ),
+              const SizedBox(height: 10),
+              ElevatedButton(
+                onPressed: () {
+                  if (!toggle) {
+                    _searchSpecies();
+                  } else {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                          content: Text("Switch to 'species' to search.")),
+                    );
+                  }
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.blue,
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(30)),
+                ),
+                child: const Text("Search"),
+              ),
+              const SizedBox(height: 10),
+            ],
+
+            // Result Section
+            if (speciesLoading)
+              const Center(child: CircularProgressIndicator())
+            else if (speciesData != null && speciesData!.length > 1) ...[
+              Expanded(
+                child: Column(
+                  children: [
+                    Expanded(
+                      child: GridView.builder(
+                        itemCount: _paginatedResults.length,
+                        padding: const EdgeInsets.all(8),
+                        gridDelegate:
+                            const SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: 3,
+                          mainAxisSpacing: 8,
+                          crossAxisSpacing: 8,
+                          childAspectRatio: 1, // ✅ FIXED: Enough vertical space
                         ),
-                      ],
+                        itemBuilder: (context, index) {
+                          final row = _paginatedResults[index];
+                          return Card(
+                            child: Center(
+                              child: Padding(
+                                padding: const EdgeInsets.all(8.0),
+                                child: Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Text(row[0],
+                                        style: const TextStyle(
+                                            fontWeight: FontWeight.bold)),
+                                    const SizedBox(height: 4),
+                                    Text(row[1]),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          );
+                        },
+                      ),
                     ),
-                    const SizedBox(height: 24),
+                    const SizedBox(height: 10),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        const Text(
-                          'species',
-                          style: TextStyle(
-                            color: Colors.blue,
-                            fontSize: 16,
+                        if (_currentPage > 0)
+                          ElevatedButton(
+                            onPressed: () => setState(() => _currentPage--),
+                            child: const Text("Previous"),
                           ),
-                        ),
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 8),
-                          child: GestureDetector(
-                            onTap: () {
-                              setState(() {
-                                toggle = !toggle;
-                              });
-                            },
-                            child: Container(
-                              width: 50,
-                              height: 28,
-                              decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(14),
-                                color: Colors.blue.shade200,
-                                border: Border.all(
-                                  color: Colors.grey.shade400,
-                                  width: 0.5,
-                                ),
-                              ),
-                              child: Stack(
-                                children: [
-                                  AnimatedPositioned(
-                                    duration: const Duration(milliseconds: 200),
-                                    curve: Curves.easeInOut,
-                                    left: toggle ? 22 : 0,
-                                    right: toggle ? 0 : 22,
-                                    top: 0,
-                                    bottom: 0,
-                                    child: Container(
-                                      width: 28,
-                                      height: 28,
-                                      decoration: BoxDecoration(
-                                        shape: BoxShape.circle,
-                                        color: Colors.blue.shade600,
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
+                        const SizedBox(width: 16),
+                        if ((_currentPage + 1) * _itemsPerPage <
+                            (speciesData?.length ?? 0))
+                          ElevatedButton(
+                            onPressed: () => setState(() => _currentPage++),
+                            child: const Text("Next"),
                           ),
-                        ),
-                        const Text(
-                          'genomes',
-                          style: TextStyle(
-                            color: Colors.blue,
-                            fontSize: 16,
-                          ),
-                        ),
                       ],
                     ),
                   ],
                 ),
               ),
-              const SizedBox(height: 50),
-              if (_selectedFunctionality == null)
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(30),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(15),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.grey.withOpacity(0.1),
-                        blurRadius: 4,
-                        offset: const Offset(0, 2),
-                      ),
-                    ],
-                  ),
-                  child: Column(
-                    children: [
-                      Container(
-                        width: 80,
-                        height: 80,
-                        decoration: BoxDecoration(
-                          color: Colors.blue.shade100,
-                          shape: BoxShape.circle,
-                        ),
-                        child: const Center(
-                          child: Icon(
-                            Icons.article_outlined,
-                            size: 40,
-                            color: Colors.blue,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 24),
-                      const Text(
-                        'Get Functional Feature Profiles',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          fontSize: 22,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.blue,
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      Text(
-                        'Here you will get the the mean derived detection profiles in species-level as well as functional profiles in strain-level. You will have the option to download the profiles for different functional categories like COG, CAZy, BiGG etc.',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          fontSize: 16,
-                          color: Colors.grey.shade600,
-                          height: 1.5,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              if (_selectedFunctionality != null)
-                Column(
-                  children: [
-                    Container(
-                      height: 50,
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(30),
-                        border: Border.all(color: Colors.blue.shade300),
-                        color: Colors.white,
-                      ),
-                      child: TextField(
-                        controller: _searchController,
-                        decoration: const InputDecoration(
-                          hintText: 'Enter the Organism Name...',
-                          prefixIcon: Icon(Icons.search, color: Colors.grey),
-                          border: InputBorder.none,
-                          contentPadding: EdgeInsets.symmetric(
-                              horizontal: 16, vertical: 12),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 20),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: ElevatedButton(
-                            onPressed: () {
-                              if (toggle == false) {
-                                _searchSpecies();
-                              } else {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                      content: Text(
-                                          "Switch to 'species' to search.")),
-                                );
-                              }
-                            },
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.blue,
-                              foregroundColor: Colors.white,
-                              padding: const EdgeInsets.symmetric(vertical: 12),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(30),
-                              ),
-                            ),
-                            child: const Text('Search'),
-                          ),
-                        ),
-                        const Padding(
-                          padding: EdgeInsets.symmetric(horizontal: 16),
-                          child: Text(
-                            'or',
-                            style: TextStyle(color: Colors.grey),
-                          ),
-                        ),
-                        Expanded(
-                          child: ElevatedButton(
-                            onPressed: () {
-                              // Handle upload
-                            },
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.blue,
-                              foregroundColor: Colors.white,
-                              padding: const EdgeInsets.symmetric(vertical: 12),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(30),
-                              ),
-                            ),
-                            child: const Text('Upload .txt File'),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 30),
-                    speciesLoading
-                        ? CircularProgressIndicator()
-                        : speciesData == null
-                            ? SizedBox()
-                            : speciesData!.length <= 1
-                                ? Center(child: Text("No results found"))
-                                : ListView.separated(
-                                    shrinkWrap: true,
-                                    physics: NeverScrollableScrollPhysics(),
-                                    itemCount: speciesData!.length,
-                                    separatorBuilder: (_, __) => Divider(),
-                                    itemBuilder: (context, index) {
-                                      final row = speciesData![index];
-                                      return ListTile(
-                                        title: Text(row[0]),
-                                        subtitle: Text(row[1]),
-                                      );
-                                    },
-                                  )
-                  ],
-                ),
-            ],
-          ),
+            ] else if (speciesData != null)
+              const Center(child: Text("No results found")),
+          ],
         ),
       ),
     );

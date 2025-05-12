@@ -1,6 +1,8 @@
 import 'package:blue_ui_app/api_service.dart';
-import 'package:blue_ui_app/dropdown.dart';
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
+import 'dart:html' as html;
 
 class AnnotationFilesPage extends StatefulWidget {
   const AnnotationFilesPage({Key? key}) : super(key: key);
@@ -11,23 +13,82 @@ class AnnotationFilesPage extends StatefulWidget {
 
 class _AnnotationFilesPageState extends State<AnnotationFilesPage> {
   final TextEditingController _searchController = TextEditingController();
-  String? _selectedFunctionality;
-  bool toggle = false;
-  final bool _dropdownOpen = false;
+  List<String> genomeResults = [];
+  Set<String> selectedGenomeIds = {};
+  bool genomeLoading = false;
 
-  List<String>? genomResponse = ["ho", "by"];
+  Future<void> _searchGenomeIDs() async {
+    final rawOrganismName = _searchController.text.trim();
+    if (rawOrganismName.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Please enter an organism name")),
+      );
+      return;
+    }
 
-  // Functionality options for Annotation Files
-  final List<String> _functionalityOptions = [
-    'GFF',
-    'GTF',
-    'BED',
-    'VCF',
-    'BAM',
-    'SAM',
-    'FASTA',
-    'FASTQ',
-  ];
+    setState(() {
+      genomeLoading = true;
+      genomeResults = [];
+      selectedGenomeIds = {};
+    });
+
+    try {
+      final payload = [rawOrganismName];
+      final response = await ApiService.getGenomeIDs(payload);
+      final key = rawOrganismName.toLowerCase().replaceAll(' ', '_');
+      final dataList = response[key] ?? [];
+
+      genomeResults = List<String>.from(dataList.map((item) => item.toString()));
+      selectedGenomeIds = {};
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Found ${genomeResults.length} results.")),
+      );
+    } catch (e) {
+      genomeResults = [];
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Error fetching genome IDs")),
+      );
+    }
+
+    setState(() {
+      genomeLoading = false;
+    });
+  }
+
+  Future<void> _downloadSelectedFiles() async {
+    if (selectedGenomeIds.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Please select at least one file.")),
+      );
+      return;
+    }
+
+    try {
+      final response = await http.post(
+        Uri.parse("http://192.168.16.203:8000/annotationZip"),
+        headers: {"Content-Type": "application/json"},
+        body: jsonEncode(selectedGenomeIds.toList()),
+      );
+
+      if (response.statusCode == 200) {
+        final blob = html.Blob([response.bodyBytes]);
+        final url = html.Url.createObjectUrlFromBlob(blob);
+        final anchor = html.AnchorElement(href: url)
+          ..setAttribute("download", "annotation_files.zip")
+          ..click();
+        html.Url.revokeObjectUrl(url);
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Download failed: ${response.statusCode}")),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Error: $e")),
+      );
+    }
+  }
 
   @override
   void dispose() {
@@ -35,411 +96,159 @@ class _AnnotationFilesPageState extends State<AnnotationFilesPage> {
     super.dispose();
   }
 
-  bool genomeLoading = false;
-  Future<void> _searchGenomeIDs() async {
-    genomeLoading = true;
-    setState(() {});
+  Widget _buildTableHeader() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(colors: [Colors.blue.shade500, Colors.blue.shade700]),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Row(
+        children: const [
+          Expanded(flex: 4, child: Text("GENOME ID", style: TextStyle(color: Colors.white))),
+          Expanded(flex: 4, child: Text("SPECIES NAME", style: TextStyle(color: Colors.white))),
+          Expanded(flex: 2, child: Text("SELECT", style: TextStyle(color: Colors.white), textAlign: TextAlign.end)),
+        ],
+      ),
+    );
+  }
 
-    final rawOrganismName = _searchController.text.trim();
-
-    if (rawOrganismName.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Please enter an organism name")),
-      );
-      genomeLoading = false;
-      setState(() {});
-      return;
-    }
-
-    try {
-      final payload = [rawOrganismName];
-      final response = await ApiService.getGenomeIDs(payload);
-
-      // Convert to snake_case key: lowercase + underscores
-      final key = rawOrganismName.toLowerCase().replaceAll(' ', '_');
-
-      final dataList = response[key] ?? [];
-
-      genomResponse =
-          List<String>.from(dataList.map((item) => item.toString()));
-
-      print("API Response: $response");
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Found ${genomResponse!.length} results.")),
-      );
-    } catch (e) {
-      genomResponse = null;
-      print("API error: $e");
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Error fetching genome IDs")),
-      );
-    }
-
-    genomeLoading = false;
-    setState(() {});
+  Widget _buildRow(String genomeId) {
+    final selected = selectedGenomeIds.contains(genomeId);
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+      decoration: BoxDecoration(
+        color: selected ? Colors.blue.shade50 : Colors.white,
+        borderRadius: BorderRadius.circular(6),
+      ),
+      child: Row(
+        children: [
+          Expanded(flex: 4, child: Text(genomeId)),
+          Expanded(flex: 4, child: Text(_searchController.text.trim())),
+          Expanded(
+            flex: 2,
+            child: Align(
+              alignment: Alignment.centerRight,
+              child: Checkbox(
+                value: selected,
+                onChanged: (value) {
+                  setState(() {
+                    if (value == true) {
+                      selectedGenomeIds.add(genomeId);
+                    } else {
+                      selectedGenomeIds.remove(genomeId);
+                    }
+                  });
+                },
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
+    final allSelected = selectedGenomeIds.length == genomeResults.length &&
+        genomeResults.isNotEmpty;
+
     return Scaffold(
-      backgroundColor: Colors.blue.shade50,
       appBar: AppBar(
-        flexibleSpace: Container(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [Colors.blue.shade300, Colors.blue.shade700],
-            ),
-          ),
-        ),
-        elevation: 0,
-        title: const Row(
-          children: [
-            Text(
-              'Database',
-              style: TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-            Text(
-              ' > ',
-              style: TextStyle(
-                color: Colors.white70,
-              ),
-            ),
-            Text(
-              'Get Annotation Files',
-              style: TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ],
-        ),
-        iconTheme: const IconThemeData(
-          color: Colors.white,
-        ),
+        title: const Text("Get Annotation Files"),
+        backgroundColor: Colors.blue.shade400,
       ),
-      body: SingleChildScrollView(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(16.0, 16.0, 16.0, 30.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // First card - with functionality dropdown and toggles
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(15),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.grey.withOpacity(0.1),
-                      blurRadius: 4,
-                      offset: const Offset(0, 2),
+      body: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          children: [
+            // Search Bar
+            Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: _searchController,
+                    decoration: InputDecoration(
+                      hintText: 'Enter Organism Name',
+                      border: OutlineInputBorder(),
+                      prefixIcon: const Icon(Icons.search),
                     ),
-                  ],
+                  ),
                 ),
+                const SizedBox(width: 10),
+                ElevatedButton(
+                  onPressed: _searchGenomeIDs,
+                  child: const Text("Search"),
+                ),
+              ],
+            ),
+            const SizedBox(height: 20),
+
+            // Header Controls
+            if (genomeResults.isNotEmpty)
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    "Search Results (${genomeResults.length} items)",
+                    style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.blue),
+                  ),
+                  Row(
+                    children: [
+                      Checkbox(
+                        value: allSelected,
+                        onChanged: (val) {
+                          setState(() {
+                            if (val == true) {
+                              selectedGenomeIds = {...genomeResults};
+                            } else {
+                              selectedGenomeIds.clear();
+                            }
+                          });
+                        },
+                      ),
+                      Text(allSelected ? "Deselect All" : "Select All",
+                          style: const TextStyle(color: Colors.blue)),
+                      const SizedBox(width: 10),
+                      if (selectedGenomeIds.isNotEmpty)
+                        ElevatedButton.icon(
+                          onPressed: _downloadSelectedFiles,
+                          icon: const Icon(Icons.download),
+                          label: const Text("Download Selected"),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.blue.shade600,
+                          ),
+                        )
+                    ],
+                  ),
+                ],
+              ),
+            const SizedBox(height: 12),
+
+            // Table + Rows
+            if (genomeLoading)
+              const CircularProgressIndicator()
+            else if (genomeResults.isNotEmpty)
+              Expanded(
                 child: Column(
                   children: [
-                    // Functionality selector row
-                    Row(
-                      children: [
-                        // Functionality label with blue background
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                              vertical: 10, horizontal: 16),
-                          decoration: BoxDecoration(
-                            color: Colors.blue.shade100,
-                            borderRadius: BorderRadius.circular(20),
-                          ),
-                          child: const Text(
-                            'Functionality:',
-                            style: TextStyle(
-                              color: Colors.blue,
-                              fontWeight: FontWeight.bold,
-                              fontSize: 16,
-                            ),
-                          ),
-                        ),
-
-                        const SizedBox(width: 12),
-
-                        // Dropdown button
-                        // Dropdown button
-                        Expanded(
-                          child: CustomDropDown(
-                            itemsList: _functionalityOptions,
-                            onChanged: ({required value}) {
-                              setState(() {
-                                _selectedFunctionality = value;
-                              });
-                            },
-                            selectedValue: _selectedFunctionality,
-                          ),
-                        ),
-                      ],
-                    ),
-
-                    const SizedBox(height: 24),
-
-                    // Toggle switches row
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        // Species toggle
-                        const Text(
-                          'species',
-                          style: TextStyle(
-                            color: Colors.blue,
-                            fontSize: 16,
-                          ),
-                        ),
-
-                        // Custom Toggle Switch for genomes
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 8),
-                          child: GestureDetector(
-                            onTap: () {
-                              setState(() {
-                                toggle = !toggle;
-                              });
-                            },
-                            child: Container(
-                              width: 50,
-                              height: 28,
-                              decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(14),
-                                color: Colors.blue.shade200,
-                                border: Border.all(
-                                  color: Colors.grey.shade400,
-                                  width: 0.5,
-                                ),
-                              ),
-                              child: Stack(
-                                children: [
-                                  AnimatedPositioned(
-                                    duration: const Duration(milliseconds: 200),
-                                    curve: Curves.easeInOut,
-                                    left: toggle ? 22 : 0,
-                                    right: toggle ? 0 : 22,
-                                    top: 0,
-                                    bottom: 0,
-                                    child: Container(
-                                      width: 28,
-                                      height: 28,
-                                      decoration: BoxDecoration(
-                                        shape: BoxShape.circle,
-                                        color: Colors.blue.shade600,
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ),
-
-                        // Genomes toggle
-                        const Text(
-                          'genomes',
-                          style: TextStyle(
-                            color: Colors.blue,
-                            fontSize: 16,
-                          ),
-                        ),
-                      ],
+                    _buildTableHeader(),
+                    const SizedBox(height: 10),
+                    Expanded(
+                      child: ListView.separated(
+                        itemCount: genomeResults.length,
+                        separatorBuilder: (_, __) => const SizedBox(height: 6),
+                        itemBuilder: (context, index) {
+                          return _buildRow(genomeResults[index]);
+                        },
+                      ),
                     ),
                   ],
                 ),
-              ),
-
-              const SizedBox(height: 50),
-
-              // Second card - showing select functionality message
-              if (_selectedFunctionality == null)
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(30),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(15),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.grey.withOpacity(0.1),
-                        blurRadius: 4,
-                        offset: const Offset(0, 2),
-                      ),
-                    ],
-                  ),
-                  child: Column(
-                    children: [
-                      // Document icon
-                      Container(
-                        width: 80,
-                        height: 80,
-                        decoration: BoxDecoration(
-                          color: Colors.blue.shade100,
-                          shape: BoxShape.circle,
-                        ),
-                        child: const Center(
-                          child: Icon(
-                            Icons.article_outlined,
-                            size: 40,
-                            color: Colors.blue,
-                          ),
-                        ),
-                      ),
-
-                      const SizedBox(height: 24),
-
-                      // Select a Functionality text
-                      const Text(
-                        'Get Functional Annotation Files',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          fontSize: 22,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.blue,
-                        ),
-                      ),
-
-                      const SizedBox(height: 16),
-
-                      // Instruction text
-                      Text(
-                        'You can download functional annotation files in .tsv file format by searching organism name in the species-level. To make it user friendly, you will have the option to select species as well as strains for downloading.',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          fontSize: 16,
-                          color: Colors.grey.shade600,
-                          height: 1.5,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-
-              // Search field and buttons (shown when functionality is selected)
-              if (_selectedFunctionality != null)
-                Column(
-                  children: [
-                    // Search field
-                    Container(
-                      height: 50,
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(30),
-                        border: Border.all(color: Colors.blue.shade300),
-                        color: Colors.white,
-                      ),
-                      child: TextField(
-                        controller: _searchController,
-                        decoration: const InputDecoration(
-                          hintText: 'Enter the Organism Name...',
-                          prefixIcon: Icon(Icons.search, color: Colors.grey),
-                          border: InputBorder.none,
-                          contentPadding: EdgeInsets.symmetric(
-                              horizontal: 16, vertical: 12),
-                        ),
-                      ),
-                    ),
-
-                    const SizedBox(height: 20),
-
-                    // Buttons row
-                    Row(
-                      children: [
-                        // Search button
-                        Expanded(
-                          child: ElevatedButton(
-                            onPressed: () {
-                              if (toggle == true) {
-                                _searchGenomeIDs();
-                              } else {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                      content: Text(
-                                          "Switch to 'genomes' to search.")),
-                                );
-                              }
-                            },
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.blue,
-                              foregroundColor: Colors.white,
-                              padding: const EdgeInsets.symmetric(vertical: 12),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(30),
-                              ),
-                            ),
-                            child: const Text('Search'),
-                          ),
-                        ),
-
-                        // OR text
-                        const Padding(
-                          padding: EdgeInsets.symmetric(horizontal: 16),
-                          child: Text(
-                            'or',
-                            style: TextStyle(color: Colors.grey),
-                          ),
-                        ),
-
-                        // Upload button
-                        Expanded(
-                          child: ElevatedButton(
-                            onPressed: () {
-                              // Handle upload
-                            },
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.blue,
-                              foregroundColor: Colors.white,
-                              padding: const EdgeInsets.symmetric(vertical: 12),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(30),
-                              ),
-                            ),
-                            child: const Text('Upload .txt File'),
-                          ),
-                        ),
-                      ],
-                    ),
-                    toggle == false
-                        ? SizedBox()
-                        : genomeLoading
-                            ? const CircularProgressIndicator()
-                            : genomResponse == null
-                                ? const SizedBox()
-                                : genomResponse!.isEmpty
-                                    ? Container(
-                                        padding: const EdgeInsets.all(16.0),
-                                        alignment: Alignment.center,
-                                        child: const Text(
-                                          'No results found',
-                                          style: TextStyle(
-                                              fontSize: 16, color: Colors.grey),
-                                        ),
-                                      )
-                                    : ListView.separated(
-                                        physics:
-                                            const NeverScrollableScrollPhysics(),
-                                        shrinkWrap: true,
-                                        itemCount: genomResponse!.length,
-                                        itemBuilder: (context, index) {
-                                          return ListTile(
-                                            title: Text(genomResponse![index]),
-                                          );
-                                        },
-                                        separatorBuilder: (context, index) =>
-                                            const Divider(),
-                                      )
-                  ],
-                ),
-            ],
-          ),
+              )
+            else if (!genomeLoading)
+              const Text("No results found."),
+          ],
         ),
       ),
     );
