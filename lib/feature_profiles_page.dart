@@ -66,7 +66,7 @@ class _FeatureProfilesPageState extends State<FeatureProfilesPage> {
       final response = await ApiService.getFuncMatrixFile(
         payload,
         _selectedFunctionality!,
-        'species',
+        !toggle ? 'species' : 'genomes',
       );
 
       final raw = response.toString();
@@ -233,14 +233,7 @@ class _FeatureProfilesPageState extends State<FeatureProfilesPage> {
               const SizedBox(height: 10),
               ElevatedButton(
                 onPressed: () {
-                  if (!toggle) {
-                    _searchSpecies();
-                  } else {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                          content: Text("Switch to 'species' to search.")),
-                    );
-                  }
+                  _searchSpecies();
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.blue,
@@ -250,7 +243,60 @@ class _FeatureProfilesPageState extends State<FeatureProfilesPage> {
                 child: const Text("Search"),
               ),
               const SizedBox(height: 10),
-            ],
+            ] else
+              Padding(
+                padding: const EdgeInsets.only(top: 30),
+                child: Container(
+                  padding: const EdgeInsets.all(30),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(20),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.blue.shade100.withOpacity(0.5),
+                        blurRadius: 10,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: Colors.blue.shade100,
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(
+                          Icons.description_outlined,
+                          size: 60,
+                          color: Colors.blue.shade700,
+                        ),
+                      ),
+                      const SizedBox(height: 24),
+                      Text(
+                        'Search by Functional Description',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          color: Colors.blue.shade700,
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
+                        'For advanced level browsing, you can search by any functional feature description or any database ID (For example, COG ID, KEGG MODULE ID etc.) and you will get the species names which contain those functional features encoded in their genomes.',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          color: Colors.grey.shade600,
+                          fontSize: 16,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
 
             // Result Section
             if (speciesLoading)
