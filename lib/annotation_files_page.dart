@@ -67,28 +67,28 @@ class _AnnotationFilesPageState extends State<AnnotationFilesPage> {
     }
 
     try {
-      final zipBytes =
-          await ApiService.downloadAnnotationZipHttp(selectedGenomeIds.toList());
-          
+      final zipBytes = await ApiService.downloadAnnotationZipHttp(
+          selectedGenomeIds.toList());
+
       final uri = Uri.parse('http://192.168.16.203:8000/annotationZip');
-    final response = await http.post(
-      uri,
-      headers: {"Content-Type": "application/json"},
-      body: jsonEncode(selectedGenomeIds.toList()),
-    );
+      final response = await http.post(
+        uri,
+        headers: {"Content-Type": "application/json"},
+        body: jsonEncode(selectedGenomeIds.toList()),
+      );
 
-    if (response.statusCode != 200) {
-      throw Exception("Server error ${response.statusCode}");
-    }
+      if (response.statusCode != 200) {
+        throw Exception("Server error ${response.statusCode}");
+      }
 
-    // Get Downloads directory path
-    final downloadsDir = Directory('/storage/emulated/0/Download');
-    final file = File('${downloadsDir.path}/annotations.zip');
-    await file.writeAsBytes(response.bodyBytes);
+      // Get Downloads directory path
+      final downloadsDir = Directory('/storage/emulated/0/Download');
+      final file = File('${downloadsDir.path}/annotations.zip');
+      await file.writeAsBytes(response.bodyBytes);
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Saved to ${file.path}')),
-    );
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Saved to ${file.path}')),
+      );
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text("Download failed: $e")),
@@ -264,7 +264,59 @@ class _AnnotationFilesPageState extends State<AnnotationFilesPage> {
                 ),
               )
             else if (!genomeLoading)
-              const Text("No results found."),
+              Padding(
+                padding: const EdgeInsets.only(top: 30),
+                child: Container(
+                  padding: const EdgeInsets.all(30),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(20),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.blue.shade100.withOpacity(0.5),
+                        blurRadius: 10,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: Colors.blue.shade100,
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(
+                          Icons.description_outlined,
+                          size: 60,
+                          color: Colors.blue.shade700,
+                        ),
+                      ),
+                      const SizedBox(height: 24),
+                      Text(
+                        'Search by Functional Description',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          color: Colors.blue.shade700,
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
+                        'For advanced level browsing, you can search by any functional feature description or any database ID (For example, COG ID, KEGG MODULE ID etc.) and you will get the species names which contain those functional features encoded in their genomes.',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          color: Colors.grey.shade600,
+                          fontSize: 16,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
           ],
         ),
       ),
