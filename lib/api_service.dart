@@ -104,7 +104,7 @@ class ApiService {
   }
 
   static Future<dynamic> getFuncMatrixFile(
-  List<String> data,
+    List<String> data,
     String funcType,
     String taxanomy,
   ) async {
@@ -120,6 +120,25 @@ class ApiService {
       return response.data;
     } catch (e) {
       throw Exception('POST /getFuncMatrixFile failed: $e');
+    }
+  }
+
+  // Downloads ZIP from selected genome IDs
+  static Future<List<int>> downloadAnnotationZip(List<String> genomeIds) async {
+    try {
+      final response = await _dio.post<List<int>>(
+        '/annotationZip',
+        data: genomeIds,
+        options: Options(
+          responseType: ResponseType.bytes,
+          headers: {
+            "Content-Type": "application/json",
+          },
+        ),
+      );
+      return response.data!;
+    } catch (e) {
+      throw Exception('POST /annotationZip download failed: $e');
     }
   }
 }

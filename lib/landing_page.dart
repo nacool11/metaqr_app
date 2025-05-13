@@ -80,6 +80,7 @@ class LandingPage extends StatelessWidget {
                 width: double.infinity,
                 child: ElevatedButton(
                   onPressed: () {
+                    debugPrint("hello");
                     Navigator.pushNamed(context, '/main');
                   },
                   style: ElevatedButton.styleFrom(

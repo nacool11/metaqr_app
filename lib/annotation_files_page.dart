@@ -2,7 +2,7 @@ import 'package:blue_ui_app/api_service.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
-import 'dart:html' as html;
+
 
 class AnnotationFilesPage extends StatefulWidget {
   const AnnotationFilesPage({Key? key}) : super(key: key);
@@ -38,7 +38,8 @@ class _AnnotationFilesPageState extends State<AnnotationFilesPage> {
       final key = rawOrganismName.toLowerCase().replaceAll(' ', '_');
       final dataList = response[key] ?? [];
 
-      genomeResults = List<String>.from(dataList.map((item) => item.toString()));
+      genomeResults =
+          List<String>.from(dataList.map((item) => item.toString()));
       selectedGenomeIds = {};
 
       ScaffoldMessenger.of(context).showSnackBar(
@@ -65,27 +66,18 @@ class _AnnotationFilesPageState extends State<AnnotationFilesPage> {
     }
 
     try {
-      final response = await http.post(
-        Uri.parse("http://192.168.16.203:8000/annotationZip"),
-        headers: {"Content-Type": "application/json"},
-        body: jsonEncode(selectedGenomeIds.toList()),
-      );
+      final zipBytes =
+          await ApiService.downloadAnnotationZip(selectedGenomeIds.toList());
 
-      if (response.statusCode == 200) {
-        final blob = html.Blob([response.bodyBytes]);
-        final url = html.Url.createObjectUrlFromBlob(blob);
-        final anchor = html.AnchorElement(href: url)
-          ..setAttribute("download", "annotation_files.zip")
-          ..click();
-        html.Url.revokeObjectUrl(url);
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Download failed: ${response.statusCode}")),
-        );
-      }
+      //final blob = html.Blob([zipBytes]);
+      //final url = html.Url.createObjectUrlFromBlob(blob);
+      //final anchor = html.AnchorElement(href: url)
+      //   ..setAttribute("download", "annotation_files.zip")
+      //   ..click();
+      // html.Url.revokeObjectUrl(url);
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Error: $e")),
+        SnackBar(content: Text("Download failed: $e")),
       );
     }
   }
@@ -100,14 +92,24 @@ class _AnnotationFilesPageState extends State<AnnotationFilesPage> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
-        gradient: LinearGradient(colors: [Colors.blue.shade500, Colors.blue.shade700]),
+        gradient: LinearGradient(
+            colors: [Colors.blue.shade500, Colors.blue.shade700]),
         borderRadius: BorderRadius.circular(8),
       ),
       child: Row(
         children: const [
-          Expanded(flex: 4, child: Text("GENOME ID", style: TextStyle(color: Colors.white))),
-          Expanded(flex: 4, child: Text("SPECIES NAME", style: TextStyle(color: Colors.white))),
-          Expanded(flex: 2, child: Text("SELECT", style: TextStyle(color: Colors.white), textAlign: TextAlign.end)),
+          Expanded(
+              flex: 4,
+              child: Text("GENOME ID", style: TextStyle(color: Colors.white))),
+          Expanded(
+              flex: 4,
+              child:
+                  Text("SPECIES NAME", style: TextStyle(color: Colors.white))),
+          Expanded(
+              flex: 2,
+              child: Text("SELECT",
+                  style: TextStyle(color: Colors.white),
+                  textAlign: TextAlign.end)),
         ],
       ),
     );
@@ -191,7 +193,8 @@ class _AnnotationFilesPageState extends State<AnnotationFilesPage> {
                 children: [
                   Text(
                     "Search Results (${genomeResults.length} items)",
-                    style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.blue),
+                    style: const TextStyle(
+                        fontWeight: FontWeight.bold, color: Colors.blue),
                   ),
                   Row(
                     children: [
