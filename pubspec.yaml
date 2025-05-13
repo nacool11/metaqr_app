@@ -14,6 +14,9 @@ dependencies:
   pretty_dio_logger: ^1.3.1
   # QR code scanner
   mobile_scanner: ^3.5.4
+  flutter_html: ^3.0.0
+  path_provider: ^2.1.1
+  permission_handler: ^11.3.0
 
   # URL launcher to open links
   url_launcher: ^6.2.2

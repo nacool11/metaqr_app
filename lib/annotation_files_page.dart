@@ -1,8 +1,9 @@
+import 'dart:io';
+
 import 'package:blue_ui_app/api_service.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
-
 
 class AnnotationFilesPage extends StatefulWidget {
   const AnnotationFilesPage({Key? key}) : super(key: key);
@@ -67,14 +68,27 @@ class _AnnotationFilesPageState extends State<AnnotationFilesPage> {
 
     try {
       final zipBytes =
-          await ApiService.downloadAnnotationZip(selectedGenomeIds.toList());
+          await ApiService.downloadAnnotationZipHttp(selectedGenomeIds.toList());
+          
+      final uri = Uri.parse('http://192.168.16.203:8000/annotationZip');
+    final response = await http.post(
+      uri,
+      headers: {"Content-Type": "application/json"},
+      body: jsonEncode(selectedGenomeIds.toList()),
+    );
 
-      //final blob = html.Blob([zipBytes]);
-      //final url = html.Url.createObjectUrlFromBlob(blob);
-      //final anchor = html.AnchorElement(href: url)
-      //   ..setAttribute("download", "annotation_files.zip")
-      //   ..click();
-      // html.Url.revokeObjectUrl(url);
+    if (response.statusCode != 200) {
+      throw Exception("Server error ${response.statusCode}");
+    }
+
+    // Get Downloads directory path
+    final downloadsDir = Directory('/storage/emulated/0/Download');
+    final file = File('${downloadsDir.path}/annotations.zip');
+    await file.writeAsBytes(response.bodyBytes);
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Saved to ${file.path}')),
+    );
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text("Download failed: $e")),
@@ -217,7 +231,7 @@ class _AnnotationFilesPageState extends State<AnnotationFilesPage> {
                         ElevatedButton.icon(
                           onPressed: _downloadSelectedFiles,
                           icon: const Icon(Icons.download),
-                          label: const Text("Download Selected"),
+                          label: const Text(""),
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Colors.blue.shade600,
                           ),

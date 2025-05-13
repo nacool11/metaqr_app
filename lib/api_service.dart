@@ -1,5 +1,8 @@
+import 'dart:convert';
+
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
+import 'package:http/http.dart' as http;
 import 'package:pretty_dio_logger/pretty_dio_logger.dart';
 // import 'package:dio_logger/dio_logger.dart';
 
@@ -130,7 +133,7 @@ class ApiService {
         '/annotationZip',
         data: genomeIds,
         options: Options(
-          responseType: ResponseType.bytes,
+          // responseType: ResponseType.,
           headers: {
             "Content-Type": "application/json",
           },
@@ -139,6 +142,26 @@ class ApiService {
       return response.data!;
     } catch (e) {
       throw Exception('POST /annotationZip download failed: $e');
+    }
+  }
+  static Future<Uint8List> downloadAnnotationZipHttp(List<String> genomeIds) async {
+    try {
+      final uri = Uri.parse('$baseUrl/annotationZip');
+      final response = await http.post(
+        uri,
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: jsonEncode(genomeIds),
+      );
+
+      if (response.statusCode == 200) {
+        return response.bodyBytes;
+      } else {
+        throw Exception('Failed to download zip: ${response.statusCode}');
+      }
+    } catch (e) {
+      throw Exception('HTTP error: $e');
     }
   }
 }
