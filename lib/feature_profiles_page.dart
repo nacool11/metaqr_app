@@ -276,7 +276,7 @@ class _FeatureProfilesPageState extends State<FeatureProfilesPage> {
                       ),
                       const SizedBox(height: 24),
                       Text(
-                        'Search by Functional Description',
+                        'Functional Feature Profiles',
                         textAlign: TextAlign.center,
                         style: TextStyle(
                           color: Colors.blue.shade700,
@@ -286,7 +286,7 @@ class _FeatureProfilesPageState extends State<FeatureProfilesPage> {
                       ),
                       const SizedBox(height: 16),
                       Text(
-                        'For advanced level browsing, you can search by any functional feature description or any database ID (For example, COG ID, KEGG MODULE ID etc.) and you will get the species names which contain those functional features encoded in their genomes.',
+                        'Access mean derived detection profiles at species-level and functional profiles at strain-level. Download profiles for different functional categories like COG, CAZy, BiGG and more.',
                         textAlign: TextAlign.center,
                         style: TextStyle(
                           color: Colors.grey.shade600,

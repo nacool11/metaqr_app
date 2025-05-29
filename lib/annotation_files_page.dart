@@ -5,6 +5,8 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 
+import 'package:permission_handler/permission_handler.dart';
+
 class AnnotationFilesPage extends StatefulWidget {
   const AnnotationFilesPage({Key? key}) : super(key: key);
 
@@ -67,6 +69,15 @@ class _AnnotationFilesPageState extends State<AnnotationFilesPage> {
     }
 
     try {
+      if (Platform.isAndroid) {
+        final status = await Permission.manageExternalStorage.request();
+        if (!status.isGranted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text("Storage permission denied")),
+          );
+          return;
+        }
+      }
       final zipBytes = await ApiService.downloadAnnotationZipHttp(
           selectedGenomeIds.toList());
 
@@ -85,11 +96,16 @@ class _AnnotationFilesPageState extends State<AnnotationFilesPage> {
       final downloadsDir = Directory('/storage/emulated/0/Download');
       final file = File('${downloadsDir.path}/annotations.zip');
       await file.writeAsBytes(response.bodyBytes);
+      debugPrint("bodybytes");
+      debugPrint("${response.bodyBytes}");
 
+      debugPrint("body");
+      debugPrint(response.body);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Saved to ${file.path}')),
       );
     } catch (e) {
+      debugPrint(e.toString());
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text("Download failed: $e")),
       );
@@ -110,8 +126,8 @@ class _AnnotationFilesPageState extends State<AnnotationFilesPage> {
             colors: [Colors.blue.shade500, Colors.blue.shade700]),
         borderRadius: BorderRadius.circular(8),
       ),
-      child: Row(
-        children: const [
+      child: const Row(
+        children: [
           Expanded(
               flex: 4,
               child: Text("GENOME ID", style: TextStyle(color: Colors.white))),
@@ -184,10 +200,10 @@ class _AnnotationFilesPageState extends State<AnnotationFilesPage> {
                 Expanded(
                   child: TextField(
                     controller: _searchController,
-                    decoration: InputDecoration(
+                    decoration: const InputDecoration(
                       hintText: 'Enter Organism Name',
                       border: OutlineInputBorder(),
-                      prefixIcon: const Icon(Icons.search),
+                      prefixIcon: Icon(Icons.search),
                     ),
                   ),
                 ),
@@ -296,7 +312,7 @@ class _AnnotationFilesPageState extends State<AnnotationFilesPage> {
                       ),
                       const SizedBox(height: 24),
                       Text(
-                        'Search by Functional Description',
+                        'Functional Annotation Files',
                         textAlign: TextAlign.center,
                         style: TextStyle(
                           color: Colors.blue.shade700,
@@ -306,7 +322,7 @@ class _AnnotationFilesPageState extends State<AnnotationFilesPage> {
                       ),
                       const SizedBox(height: 16),
                       Text(
-                        'For advanced level browsing, you can search by any functional feature description or any database ID (For example, COG ID, KEGG MODULE ID etc.) and you will get the species names which contain those functional features encoded in their genomes.',
+                        'Download functional annotation files in .tsv format by searching organism names at the species level. User-friendly interface allows selection of both species and strains for downloading.',
                         textAlign: TextAlign.center,
                         style: TextStyle(
                           color: Colors.grey.shade600,
