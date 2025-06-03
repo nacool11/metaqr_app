@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:blue_ui_app/api_service.dart';
 import 'package:blue_ui_app/dropdown.dart';
 import 'package:flutter/material.dart';
@@ -29,6 +30,13 @@ class _FeatureProfilesPageState extends State<FeatureProfilesPage> {
   bool speciesLoading = false;
   List<List<dynamic>>? speciesData;
 
+  // Fuzzy search related variables
+  List<String> _suggestions = [];
+  bool _suggestionsLoading = false;
+  Timer? _debounceTimer;
+  final FocusNode _searchFocusNode = FocusNode();
+  String _lastSearchedText = ''; // Track last searched text
+
   int _currentPage = 0;
   static const int _itemsPerPage = 30;
 
@@ -41,9 +49,76 @@ class _FeatureProfilesPageState extends State<FeatureProfilesPage> {
   }
 
   @override
+  void initState() {
+    super.initState();
+    _searchController.addListener(_onSearchChanged);
+  }
+
+  @override
   void dispose() {
+    _searchController.removeListener(_onSearchChanged);
     _searchController.dispose();
+    _searchFocusNode.dispose();
+    _debounceTimer?.cancel();
     super.dispose();
+  }
+
+  void _onSearchChanged() {
+    if (_debounceTimer?.isActive ?? false) _debounceTimer!.cancel();
+
+    _debounceTimer = Timer(const Duration(milliseconds: 500), () {
+      final currentText = _searchController.text.trim();
+
+      // Only show suggestions if:
+      // 1. Text is not empty
+      // 2. We're in species mode (!toggle)
+      // 3. Current text is different from last searched text (user is typing something new)
+      if (currentText.isNotEmpty &&
+          !toggle &&
+          currentText != _lastSearchedText) {
+        _getFuzzySearchSuggestions();
+      } else {
+        setState(() {
+          _suggestions = [];
+        });
+      }
+    });
+  }
+
+  Future<void> _getFuzzySearchSuggestions() async {
+    final prefix = _searchController.text.trim();
+    if (prefix.isEmpty) return;
+
+    print('Getting suggestions for prefix: $prefix');
+    setState(() {
+      _suggestionsLoading = true;
+    });
+
+    try {
+      final suggestions = await ApiService.getFuzzySearchSuggestions(prefix);
+      print('Received ${suggestions.length} suggestions');
+      setState(() {
+        _suggestions = suggestions;
+        _suggestionsLoading = false;
+      });
+    } catch (e) {
+      print('Error getting suggestions: $e');
+      setState(() {
+        _suggestions = [];
+        _suggestionsLoading = false;
+      });
+    }
+  }
+
+  void _selectSuggestion(String suggestion) {
+    _searchController.text = suggestion;
+    setState(() {
+      _suggestions = [];
+    });
+    _searchFocusNode.unfocus();
+
+    // Auto-search when suggestion is selected
+    _searchSpecies();
   }
 
   Future<void> _searchSpecies() async {
@@ -60,6 +135,9 @@ class _FeatureProfilesPageState extends State<FeatureProfilesPage> {
       setState(() {});
       return;
     }
+
+    // Update last searched text to prevent suggestions when search is completed
+    _lastSearchedText = rawOrganismName;
 
     try {
       final payload = [rawOrganismName];
@@ -81,6 +159,9 @@ class _FeatureProfilesPageState extends State<FeatureProfilesPage> {
           })
           .where((row) => row.length == 2)
           .toList();
+
+      // Reset pagination when new search is performed
+      _currentPage = 0;
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text("Found ${speciesData?.length ?? 0} rows.")),
@@ -174,7 +255,13 @@ class _FeatureProfilesPageState extends State<FeatureProfilesPage> {
                       Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 8),
                         child: GestureDetector(
-                          onTap: () => setState(() => toggle = !toggle),
+                          onTap: () => setState(() {
+                            toggle = !toggle;
+                            // Clear suggestions when switching modes
+                            _suggestions = [];
+                            // Reset last searched text when switching modes
+                            _lastSearchedText = '';
+                          }),
                           child: Container(
                             width: 50,
                             height: 28,
@@ -216,19 +303,78 @@ class _FeatureProfilesPageState extends State<FeatureProfilesPage> {
             ),
             const SizedBox(height: 30),
 
-            // Search
+            // Search Section
             if (_selectedFunctionality != null) ...[
-              TextField(
-                controller: _searchController,
-                decoration: InputDecoration(
-                  hintText: 'Enter the Organism Name...',
-                  prefixIcon: const Icon(Icons.search, color: Colors.grey),
-                  filled: true,
-                  fillColor: Colors.white,
-                  border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(30)),
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 16),
-                ),
+              Column(
+                children: [
+                  TextField(
+                    controller: _searchController,
+                    focusNode: _searchFocusNode,
+                    decoration: InputDecoration(
+                      hintText: 'Enter the Organism Name...',
+                      prefixIcon: const Icon(Icons.search, color: Colors.grey),
+                      suffixIcon: _suggestionsLoading
+                          ? const Padding(
+                              padding: EdgeInsets.all(12.0),
+                              child: SizedBox(
+                                width: 20,
+                                height: 20,
+                                child:
+                                    CircularProgressIndicator(strokeWidth: 2),
+                              ),
+                            )
+                          : null,
+                      filled: true,
+                      fillColor: Colors.white,
+                      border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(30)),
+                      contentPadding:
+                          const EdgeInsets.symmetric(horizontal: 16),
+                    ),
+                  ),
+
+                  // Suggestions List
+                  if (_suggestions.isNotEmpty && !toggle) ...[
+                    const SizedBox(height: 8),
+                    Container(
+                      constraints: const BoxConstraints(maxHeight: 200),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(15),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.grey.withOpacity(0.1),
+                            blurRadius: 4,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                      child: ListView.separated(
+                        shrinkWrap: true,
+                        itemCount: _suggestions.length,
+                        separatorBuilder: (context, index) => Divider(
+                          height: 1,
+                          color: Colors.grey.shade200,
+                        ),
+                        itemBuilder: (context, index) {
+                          return ListTile(
+                            dense: true,
+                            leading: Icon(
+                              Icons.search,
+                              size: 18,
+                              color: Colors.blue.shade400,
+                            ),
+                            title: Text(
+                              _suggestions[index],
+                              style: const TextStyle(fontSize: 14),
+                            ),
+                            onTap: () => _selectSuggestion(_suggestions[index]),
+                          );
+                        },
+                      ),
+                    ),
+                  ],
+                ],
               ),
               const SizedBox(height: 10),
               ElevatedButton(
@@ -314,7 +460,7 @@ class _FeatureProfilesPageState extends State<FeatureProfilesPage> {
                           crossAxisCount: 3,
                           mainAxisSpacing: 8,
                           crossAxisSpacing: 8,
-                          childAspectRatio: 1, // ✅ FIXED: Enough vertical space
+                          childAspectRatio: 1,
                         ),
                         itemBuilder: (context, index) {
                           final row = _paginatedResults[index];

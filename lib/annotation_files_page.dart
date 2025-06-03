@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:blue_ui_app/api_service.dart';
@@ -20,6 +21,83 @@ class _AnnotationFilesPageState extends State<AnnotationFilesPage> {
   Set<String> selectedGenomeIds = {};
   bool genomeLoading = false;
 
+  // Fuzzy search related variables
+  List<String> _suggestions = [];
+  bool _suggestionsLoading = false;
+  Timer? _debounceTimer;
+  final FocusNode _searchFocusNode = FocusNode();
+  String _lastSearchedText = ''; // Track last searched text
+
+  @override
+  void initState() {
+    super.initState();
+    _searchController.addListener(_onSearchChanged);
+  }
+
+  @override
+  void dispose() {
+    _searchController.removeListener(_onSearchChanged);
+    _searchController.dispose();
+    _searchFocusNode.dispose();
+    _debounceTimer?.cancel();
+    super.dispose();
+  }
+
+  void _onSearchChanged() {
+    if (_debounceTimer?.isActive ?? false) _debounceTimer!.cancel();
+
+    _debounceTimer = Timer(const Duration(milliseconds: 500), () {
+      final currentText = _searchController.text.trim();
+
+      // Only show suggestions if:
+      // 1. Text is not empty
+      // 2. Current text is different from last searched text (user is typing something new)
+      if (currentText.isNotEmpty && currentText != _lastSearchedText) {
+        _getFuzzySearchSuggestions();
+      } else {
+        setState(() {
+          _suggestions = [];
+        });
+      }
+    });
+  }
+
+  Future<void> _getFuzzySearchSuggestions() async {
+    final prefix = _searchController.text.trim();
+    if (prefix.isEmpty) return;
+
+    print('Getting suggestions for prefix: $prefix');
+    setState(() {
+      _suggestionsLoading = true;
+    });
+
+    try {
+      final suggestions = await ApiService.getFuzzySearchSuggestions(prefix);
+      print('Received ${suggestions.length} suggestions');
+      setState(() {
+        _suggestions = suggestions;
+        _suggestionsLoading = false;
+      });
+    } catch (e) {
+      print('Error getting suggestions: $e');
+      setState(() {
+        _suggestions = [];
+        _suggestionsLoading = false;
+      });
+    }
+  }
+
+  void _selectSuggestion(String suggestion) {
+    _searchController.text = suggestion;
+    setState(() {
+      _suggestions = [];
+    });
+    _searchFocusNode.unfocus();
+
+    // Auto-search when suggestion is selected
+    _searchGenomeIDs();
+  }
+
   Future<void> _searchGenomeIDs() async {
     final rawOrganismName = _searchController.text.trim();
     if (rawOrganismName.isEmpty) {
@@ -28,6 +106,9 @@ class _AnnotationFilesPageState extends State<AnnotationFilesPage> {
       );
       return;
     }
+
+    // Update last searched text to prevent suggestions when search is completed
+    _lastSearchedText = rawOrganismName;
 
     setState(() {
       genomeLoading = true;
@@ -112,12 +193,6 @@ class _AnnotationFilesPageState extends State<AnnotationFilesPage> {
     }
   }
 
-  @override
-  void dispose() {
-    _searchController.dispose();
-    super.dispose();
-  }
-
   Widget _buildTableHeader() {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
@@ -194,24 +269,83 @@ class _AnnotationFilesPageState extends State<AnnotationFilesPage> {
         padding: const EdgeInsets.all(16),
         child: Column(
           children: [
-            // Search Bar
-            Row(
+            // Search Bar with Fuzzy Search
+            Column(
               children: [
-                Expanded(
-                  child: TextField(
-                    controller: _searchController,
-                    decoration: const InputDecoration(
-                      hintText: 'Enter Organism Name',
-                      border: OutlineInputBorder(),
-                      prefixIcon: Icon(Icons.search),
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        controller: _searchController,
+                        focusNode: _searchFocusNode,
+                        decoration: InputDecoration(
+                          hintText: 'Enter Organism Name',
+                          border: const OutlineInputBorder(),
+                          prefixIcon: const Icon(Icons.search),
+                          suffixIcon: _suggestionsLoading
+                              ? const Padding(
+                                  padding: EdgeInsets.all(12.0),
+                                  child: SizedBox(
+                                    width: 20,
+                                    height: 20,
+                                    child: CircularProgressIndicator(
+                                        strokeWidth: 2),
+                                  ),
+                                )
+                              : null,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    ElevatedButton(
+                      onPressed: _searchGenomeIDs,
+                      child: const Text("Search"),
+                    ),
+                  ],
+                ),
+
+                // Suggestions List
+                if (_suggestions.isNotEmpty) ...[
+                  const SizedBox(height: 8),
+                  Container(
+                    constraints: const BoxConstraints(maxHeight: 200),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: Colors.grey.shade300),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.grey.withOpacity(0.2),
+                          blurRadius: 4,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: ListView.separated(
+                      shrinkWrap: true,
+                      itemCount: _suggestions.length,
+                      separatorBuilder: (context, index) => Divider(
+                        height: 1,
+                        color: Colors.grey.shade200,
+                      ),
+                      itemBuilder: (context, index) {
+                        return ListTile(
+                          dense: true,
+                          leading: Icon(
+                            Icons.search,
+                            size: 18,
+                            color: Colors.blue.shade400,
+                          ),
+                          title: Text(
+                            _suggestions[index],
+                            style: const TextStyle(fontSize: 14),
+                          ),
+                          onTap: () => _selectSuggestion(_suggestions[index]),
+                        );
+                      },
                     ),
                   ),
-                ),
-                const SizedBox(width: 10),
-                ElevatedButton(
-                  onPressed: _searchGenomeIDs,
-                  child: const Text("Search"),
-                ),
+                ],
               ],
             ),
             const SizedBox(height: 20),

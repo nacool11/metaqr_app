@@ -7,7 +7,7 @@ import 'package:pretty_dio_logger/pretty_dio_logger.dart';
 // import 'package:dio_logger/dio_logger.dart';
 
 class ApiService {
-  static const String baseUrl = 'http://192.168.16.203:8000';
+  static const String baseUrl = 'http://192.168.3.133:8000';
   static final Dio _dio = Dio(BaseOptions(
     baseUrl: baseUrl,
     headers: {"Content-Type": "application/json"},
@@ -86,6 +86,33 @@ class ApiService {
   // GET: /
   static Future<dynamic> getRoot() => _getRequest('/');
 
+  // NEW: GET fuzzy search suggestions for species
+  static Future<List<String>> getFuzzySearchSuggestions(String prefix) async {
+    try {
+      print('Making API call to: $baseUrl/autocompleteSpecies?prefix=$prefix');
+      final response = await _dio.get(
+        '/autocompleteSpecies',
+        queryParameters: {'prefix': prefix},
+      );
+
+      print('API Response: ${response.data}');
+
+      // Assuming the API returns: {"suggestions": ["species1", "species2"]}
+      if (response.data is Map<String, dynamic> &&
+          response.data['suggestions'] is List) {
+        final suggestions = List<String>.from(response.data['suggestions']);
+        print('Parsed suggestions: $suggestions');
+        return suggestions;
+      }
+      print('Invalid response format: ${response.data}');
+      return [];
+    } catch (e) {
+      print('Error in getFuzzySearchSuggestions: $e');
+      // Return empty list on error to avoid breaking the UI
+      return [];
+    }
+  }
+
   // Generic POST request handler
   static Future<dynamic> _postRequest(String endpoint, dynamic data) async {
     try {
@@ -144,7 +171,9 @@ class ApiService {
       throw Exception('POST /annotationZip download failed: $e');
     }
   }
-  static Future<Uint8List> downloadAnnotationZipHttp(List<String> genomeIds) async {
+
+  static Future<Uint8List> downloadAnnotationZipHttp(
+      List<String> genomeIds) async {
     try {
       final uri = Uri.parse('$baseUrl/annotationZip');
       final response = await http.post(
