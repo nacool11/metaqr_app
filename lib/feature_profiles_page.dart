@@ -1,7 +1,10 @@
 import 'dart:async';
+import 'dart:io';
 import 'package:blue_ui_app/api_service.dart';
 import 'package:blue_ui_app/dropdown.dart';
 import 'package:flutter/material.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 class FeatureProfilesPage extends StatefulWidget {
   const FeatureProfilesPage({Key? key}) : super(key: key);
@@ -28,6 +31,7 @@ class _FeatureProfilesPageState extends State<FeatureProfilesPage> {
   ];
 
   bool speciesLoading = false;
+  bool downloadLoading = false; // Add download loading state
   List<List<dynamic>>? speciesData;
 
   // Fuzzy search related variables
@@ -174,6 +178,137 @@ class _FeatureProfilesPageState extends State<FeatureProfilesPage> {
 
     speciesLoading = false;
     setState(() {});
+  }
+
+  Future<void> _downloadFullFile() async {
+    if (_selectedFunctionality == null ||
+        _searchController.text.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Please complete the search first.")),
+      );
+      return;
+    }
+
+    setState(() {
+      downloadLoading = true;
+    });
+
+    try {
+      // Request storage permission for Android
+      if (Platform.isAndroid) {
+        final status = await Permission.manageExternalStorage.request();
+        if (!status.isGranted) {
+          // Try requesting WRITE_EXTERNAL_STORAGE as fallback
+          final writeStatus = await Permission.storage.request();
+          if (!writeStatus.isGranted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text("Storage permission denied")),
+            );
+            setState(() {
+              downloadLoading = false;
+            });
+            return;
+          }
+        }
+      }
+
+      // Show download progress
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Row(
+            children: [
+              const SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                ),
+              ),
+              const SizedBox(width: 16),
+              const Text("Downloading full functional matrix file..."),
+            ],
+          ),
+          duration: const Duration(seconds: 30), // Longer duration for download
+        ),
+      );
+
+      // Download the full file using the new API endpoint
+      final fileBytes = await ApiService.downloadGenomeFuncMatrixFull(
+        [_searchController.text.trim()],
+        _selectedFunctionality!,
+      );
+
+      // Determine the downloads directory
+      Directory downloadsDir;
+      if (Platform.isAndroid) {
+        // Try multiple possible download paths
+        final possiblePaths = [
+          '/storage/emulated/0/Download',
+          '/storage/emulated/0/Downloads',
+          '/sdcard/Download',
+          '/sdcard/Downloads',
+        ];
+
+        downloadsDir = Directory(possiblePaths[0]); // Default
+        for (final path in possiblePaths) {
+          final dir = Directory(path);
+          if (await dir.exists()) {
+            downloadsDir = dir;
+            break;
+          }
+        }
+
+        // Create directory if it doesn't exist
+        if (!await downloadsDir.exists()) {
+          await downloadsDir.create(recursive: true);
+        }
+      } else {
+        // For iOS or other platforms, use a different approach
+        downloadsDir = await getApplicationDocumentsDirectory();
+      }
+
+      // Generate a unique filename with timestamp
+      final timestamp = DateTime.now().millisecondsSinceEpoch;
+      final organismName = _searchController.text.trim().replaceAll(' ', '_');
+      final fileName =
+          'functional_matrix_${organismName}_${_selectedFunctionality}_${timestamp}.csv';
+      final file = File('${downloadsDir.path}/$fileName');
+
+      // Write the downloaded bytes to file
+      await file.writeAsBytes(fileBytes);
+
+      // Verify file was created successfully
+      if (await file.exists()) {
+        final fileSize = await file.length();
+        ScaffoldMessenger.of(context).clearSnackBars();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Successfully downloaded $fileName\nSize: ${(fileSize / 1024).toStringAsFixed(2)} KB\nLocation: ${file.path}',
+            ),
+            duration: const Duration(seconds: 5),
+            backgroundColor: Colors.green,
+          ),
+        );
+      } else {
+        throw Exception("File was not created successfully");
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).clearSnackBars();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text("Download failed: ${e.toString()}"),
+          backgroundColor: Colors.red,
+          duration: const Duration(seconds: 5),
+        ),
+      );
+      debugPrint("Download error: $e");
+    } finally {
+      setState(() {
+        downloadLoading = false;
+      });
+    }
   }
 
   @override
@@ -377,16 +512,48 @@ class _FeatureProfilesPageState extends State<FeatureProfilesPage> {
                 ],
               ),
               const SizedBox(height: 10),
-              ElevatedButton(
-                onPressed: () {
-                  _searchSpecies();
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.blue,
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(30)),
-                ),
-                child: const Text("Search"),
+              Row(
+                mainAxisAlignment: MainAxisAlignment
+                    .spaceBetween, // This spreads the buttons apart
+                children: [
+                  ElevatedButton(
+                    onPressed: () {
+                      _searchSpecies();
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.blue,
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(30)),
+                    ),
+                    child: const Text("Search"),
+                  ),
+                  // Download button - only show when there's search data
+                  if (speciesData != null && speciesData!.isNotEmpty)
+                    ElevatedButton(
+                      onPressed: downloadLoading ? null : _downloadFullFile,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.blue.shade600,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 16, vertical: 12),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(30),
+                        ),
+                      ),
+                      child: downloadLoading
+                          ? const SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                valueColor:
+                                    AlwaysStoppedAnimation<Color>(Colors.white),
+                              ),
+                            )
+                          : const Icon(Icons.download,
+                              size: 18), // Just the icon, no text
+                    ),
+                ],
               ),
               const SizedBox(height: 10),
             ] else

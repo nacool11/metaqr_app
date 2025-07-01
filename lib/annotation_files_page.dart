@@ -3,8 +3,8 @@ import 'dart:io';
 
 import 'package:blue_ui_app/api_service.dart';
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'package:path_provider/path_provider.dart';
 
 import 'package:permission_handler/permission_handler.dart';
 
@@ -20,6 +20,7 @@ class _AnnotationFilesPageState extends State<AnnotationFilesPage> {
   List<String> genomeResults = [];
   Set<String> selectedGenomeIds = {};
   bool genomeLoading = false;
+  bool downloadLoading = false; // Add download loading state
 
   // Fuzzy search related variables
   List<String> _suggestions = [];
@@ -27,6 +28,8 @@ class _AnnotationFilesPageState extends State<AnnotationFilesPage> {
   Timer? _debounceTimer;
   final FocusNode _searchFocusNode = FocusNode();
   String _lastSearchedText = ''; // Track last searched text
+  String _currentDisplayedSpecies =
+      ''; // Track the species name for current results
 
   @override
   void initState() {
@@ -109,6 +112,8 @@ class _AnnotationFilesPageState extends State<AnnotationFilesPage> {
 
     // Update last searched text to prevent suggestions when search is completed
     _lastSearchedText = rawOrganismName;
+    _currentDisplayedSpecies =
+        rawOrganismName; // Store the species name for current results
 
     setState(() {
       genomeLoading = true;
@@ -149,47 +154,121 @@ class _AnnotationFilesPageState extends State<AnnotationFilesPage> {
       return;
     }
 
+    setState(() {
+      downloadLoading = true;
+    });
+
     try {
+      // Request storage permission for Android
       if (Platform.isAndroid) {
         final status = await Permission.manageExternalStorage.request();
         if (!status.isGranted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text("Storage permission denied")),
-          );
-          return;
+          // Try requesting WRITE_EXTERNAL_STORAGE as fallback
+          final writeStatus = await Permission.storage.request();
+          if (!writeStatus.isGranted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text("Storage permission denied")),
+            );
+            setState(() {
+              downloadLoading = false;
+            });
+            return;
+          }
         }
       }
-      final zipBytes = await ApiService.downloadAnnotationZipHttp(
-          selectedGenomeIds.toList());
 
-      final uri = Uri.parse('http://192.168.16.203:8000/annotationZip');
-      final response = await http.post(
-        uri,
-        headers: {"Content-Type": "application/json"},
-        body: jsonEncode(selectedGenomeIds.toList()),
+      // Show download progress
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Row(
+            children: [
+              const SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                ),
+              ),
+              const SizedBox(width: 16),
+              Text("Downloading ${selectedGenomeIds.length} files..."),
+            ],
+          ),
+          duration: const Duration(seconds: 30), // Longer duration for download
+        ),
       );
 
-      if (response.statusCode != 200) {
-        throw Exception("Server error ${response.statusCode}");
+      // Download the zip file using the API service
+      final zipBytes =
+          await ApiService.downloadAnnotationZip(selectedGenomeIds.toList());
+
+      // Determine the downloads directory
+      Directory downloadsDir;
+      if (Platform.isAndroid) {
+        // Try multiple possible download paths
+        final possiblePaths = [
+          '/storage/emulated/0/Download',
+          '/storage/emulated/0/Downloads',
+          '/sdcard/Download',
+          '/sdcard/Downloads',
+        ];
+
+        downloadsDir = Directory(possiblePaths[0]); // Default
+        for (final path in possiblePaths) {
+          final dir = Directory(path);
+          if (await dir.exists()) {
+            downloadsDir = dir;
+            break;
+          }
+        }
+
+        // Create directory if it doesn't exist
+        if (!await downloadsDir.exists()) {
+          await downloadsDir.create(recursive: true);
+        }
+      } else {
+        // For iOS or other platforms, use a different approach
+        downloadsDir = await getApplicationDocumentsDirectory();
       }
 
-      // Get Downloads directory path
-      final downloadsDir = Directory('/storage/emulated/0/Download');
-      final file = File('${downloadsDir.path}/annotations.zip');
-      await file.writeAsBytes(response.bodyBytes);
-      debugPrint("bodybytes");
-      debugPrint("${response.bodyBytes}");
+      // Generate a unique filename with timestamp
+      final timestamp = DateTime.now().millisecondsSinceEpoch;
+      final fileName = 'annotations_${timestamp}.zip';
+      final file = File('${downloadsDir.path}/$fileName');
 
-      debugPrint("body");
-      debugPrint(response.body);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Saved to ${file.path}')),
-      );
+      // Write the downloaded bytes to file
+      await file.writeAsBytes(zipBytes);
+
+      // Verify file was created successfully
+      if (await file.exists()) {
+        final fileSize = await file.length();
+        ScaffoldMessenger.of(context).clearSnackBars();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Successfully downloaded $fileName\nSize: ${(fileSize / 1024 / 1024).toStringAsFixed(2)} MB\nLocation: ${file.path}',
+            ),
+            duration: const Duration(seconds: 5),
+            backgroundColor: Colors.green,
+          ),
+        );
+      } else {
+        throw Exception("File was not created successfully");
+      }
     } catch (e) {
-      debugPrint(e.toString());
+      ScaffoldMessenger.of(context).clearSnackBars();
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Download failed: $e")),
+        SnackBar(
+          content: Text("Download failed: ${e.toString()}"),
+          backgroundColor: Colors.red,
+          duration: const Duration(seconds: 5),
+        ),
       );
+      debugPrint("Download error: $e");
+    } finally {
+      setState(() {
+        downloadLoading = false;
+      });
     }
   }
 
@@ -231,7 +310,9 @@ class _AnnotationFilesPageState extends State<AnnotationFilesPage> {
       child: Row(
         children: [
           Expanded(flex: 4, child: Text(genomeId)),
-          Expanded(flex: 4, child: Text(_searchController.text.trim())),
+          Expanded(
+              flex: 4,
+              child: Text(_currentDisplayedSpecies)), // Use stored species name
           Expanded(
             flex: 2,
             child: Align(
@@ -298,8 +379,14 @@ class _AnnotationFilesPageState extends State<AnnotationFilesPage> {
                     ),
                     const SizedBox(width: 10),
                     ElevatedButton(
-                      onPressed: _searchGenomeIDs,
-                      child: const Text("Search"),
+                      onPressed: genomeLoading ? null : _searchGenomeIDs,
+                      child: genomeLoading
+                          ? const SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          : const Text("Search"),
                     ),
                   ],
                 ),
@@ -378,13 +465,26 @@ class _AnnotationFilesPageState extends State<AnnotationFilesPage> {
                           style: const TextStyle(color: Colors.blue)),
                       const SizedBox(width: 10),
                       if (selectedGenomeIds.isNotEmpty)
-                        ElevatedButton.icon(
-                          onPressed: _downloadSelectedFiles,
-                          icon: const Icon(Icons.download),
-                          label: const Text(""),
+                        ElevatedButton(
+                          onPressed:
+                              downloadLoading ? null : _downloadSelectedFiles,
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Colors.blue.shade600,
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.all(12),
+                            shape: const CircleBorder(),
                           ),
+                          child: downloadLoading
+                              ? const SizedBox(
+                                  width: 20,
+                                  height: 20,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    valueColor: AlwaysStoppedAnimation<Color>(
+                                        Colors.white),
+                                  ),
+                                )
+                              : const Icon(Icons.download),
                         )
                     ],
                   ),
