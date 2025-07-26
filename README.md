@@ -11,15 +11,7 @@
 - [📱 Overview](#-overview)
 - [✨ Features](#-features)
 - [🛠️ Tech Stack](#️-tech-stack)
-- [🧪 Screenshots](#-screenshots)
 - [🚀 Installation](#-installation)
-  - [Frontend (Flutter)](#frontend-flutter)
-  - [Backend (FastAPI)](#backend-fastapi)
-- [📡 API Endpoints](#-api-endpoints)
-- [🛣️ Project Structure](#️-project-structure)
-- [💡 Future Enhancements](#-future-enhancements)
-- [👨‍💻 Contributors](#-contributors)
-- [📄 License](#-license)
 
 ---
 
