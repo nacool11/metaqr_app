@@ -49,19 +49,52 @@ class _DescriptionPageState extends State<DescriptionPage> {
   @override
   void initState() {
     super.initState();
+    // Add listener to search controller for real-time search
+    _searchController.addListener(_onSearchTextChanged);
   }
 
   @override
   void dispose() {
+    _searchController.removeListener(_onSearchTextChanged);
     _searchController.dispose();
     _searchFocusNode.dispose();
     _debounceTimer?.cancel();
     super.dispose();
   }
 
+  // Modified method to handle text changes with debouncing - now triggers from 1 character
+  void _onSearchTextChanged() {
+    final currentText = _searchController.text.trim();
+
+    // Cancel previous timer
+    _debounceTimer?.cancel();
+
+    // Only search if functionality is selected and text is not empty
+    if (_selectedFunctionality == null || currentText.isEmpty) {
+      setState(() {
+        _suggestions = [];
+        _suggestionsLoading = false;
+      });
+      return;
+    }
+
+    // Don't search if text hasn't changed - REMOVED the length < 2 check
+    if (currentText == _lastSearchedText) {
+      return;
+    }
+
+    // Set up debounced search (300ms delay) - now triggers from 1 character
+    _debounceTimer = Timer(const Duration(milliseconds: 300), () {
+      if (mounted && currentText == _searchController.text.trim()) {
+        _getSearchSuggestions();
+      }
+    });
+  }
+
   Future<void> _getSearchSuggestions() async {
     final descName = _searchController.text.trim().toLowerCase();
-    if (descName.isEmpty || descName.length < 2) return;
+    // CHANGED: Now only checks if empty, not length < 2
+    if (descName.isEmpty) return;
 
     // Check cache first
     if (_suggestionCache.containsKey(descName)) {
@@ -384,8 +417,12 @@ class _DescriptionPageState extends State<DescriptionPage> {
     // Update last searched text
     _lastSearchedText = searchText;
 
-    // Get suggestions and show in results
-    _getSearchSuggestions();
+    // Get suggestions if not already loaded for this text
+    if (_suggestions.isEmpty ||
+        _searchController.text.trim().toLowerCase() !=
+            _lastSearchedText.toLowerCase()) {
+      _getSearchSuggestions();
+    }
 
     // TODO: Implement your search logic here
     print('Searching for: $searchText');
@@ -498,6 +535,10 @@ class _DescriptionPageState extends State<DescriptionPage> {
                                 _suggestions = [];
                                 _suggestionCache.clear();
                                 _lastSearchedText = '';
+                                // Trigger search if there's text in the search field
+                                if (_searchController.text.trim().isNotEmpty) {
+                                  _onSearchTextChanged();
+                                }
                               });
                             },
                             selectedValue: _selectedFunctionality,
@@ -536,6 +577,11 @@ class _DescriptionPageState extends State<DescriptionPage> {
                                 _suggestions = [];
                                 _suggestionCache.clear();
                                 _lastSearchedText = '';
+                                // Trigger search if there's text in the search field
+                                if (_searchController.text.trim().isNotEmpty &&
+                                    _selectedFunctionality != null) {
+                                  _onSearchTextChanged();
+                                }
                               });
                             },
                             child: Container(
@@ -749,7 +795,7 @@ class _DescriptionPageState extends State<DescriptionPage> {
                   ),
                 ),
 
-              // Results area
+              // Results area - Now shows suggestions based on real-time typing
               if (_selectedFunctionality != null)
                 Padding(
                   padding: const EdgeInsets.only(top: 20),
@@ -852,7 +898,11 @@ class _DescriptionPageState extends State<DescriptionPage> {
                                             ),
                                             const SizedBox(height: 16),
                                             Text(
-                                              'Click Search to find suggestions',
+                                              _searchController.text
+                                                      .trim()
+                                                      .isEmpty
+                                                  ? 'Start typing to see suggestions'
+                                                  : 'No suggestions found',
                                               style: TextStyle(
                                                 color: Colors.grey.shade600,
                                                 fontSize: 16,
