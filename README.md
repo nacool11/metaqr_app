@@ -63,16 +63,6 @@ This project bridges biological datasets with user-friendly mobile visualization
 
 ---
 
-## 🧪 Screenshots
-
-| Home Screen | Feature Profiles | Annotation Files |
-|-------------|------------------|------------------|
-| ![](screenshots/home.png) | ![](screenshots/profile.png) | ![](screenshots/annotation.png) |
-
-> Place your actual screenshots in the `/screenshots` directory for visibility.
-
----
-
 ## 🚀 Installation
 
 ### ✅ Frontend (Flutter)
