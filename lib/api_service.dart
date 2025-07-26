@@ -127,12 +127,18 @@ class ApiService {
     }
   }
 
-  // NEW: GET fuzzy search suggestions for species
-  static Future<List<String>> getFuzzySearchSuggestions(String prefix) async {
+  // UPDATED: Generic fuzzy search suggestions - use species endpoint for both cases
+  static Future<List<String>> getFuzzySearchSuggestions(
+      String prefix, String searchType) async {
     try {
-      print('Making API call to: $baseUrl/autocompleteSpecies?prefix=$prefix');
+      // Use species autocomplete for both species and genomes since
+      // genome search also requires species names
+      String endpoint = '/autocompleteSpecies';
+
+      print(
+          'Making API call to: $baseUrl$endpoint?prefix=$prefix (searchType: $searchType)');
       final response = await _dio.get(
-        '/autocompleteSpecies',
+        endpoint,
         queryParameters: {'prefix': prefix},
       );
 
@@ -145,12 +151,63 @@ class ApiService {
         print('Parsed suggestions: $suggestions');
         return suggestions;
       }
+
+      // Alternative response format handling
+      if (response.data is List) {
+        final suggestions = List<String>.from(response.data);
+        print('Parsed suggestions (direct list): $suggestions');
+        return suggestions;
+      }
+
       print('Invalid response format: ${response.data}');
       return [];
     } catch (e) {
       print('Error in getFuzzySearchSuggestions: $e');
+      if (e is DioException) {
+        print('DioException details: ${e.message}');
+        print('Response data: ${e.response?.data}');
+        print('Response status code: ${e.response?.statusCode}');
+      }
       // Return empty list on error to avoid breaking the UI
       return [];
+    }
+  }
+
+  // NEW: Get genome functional matrix preview with pagination
+  static Future<Map<String, dynamic>?> getGenomeFuncMatrixPreview({
+    required String funcType,
+    int page = 1,
+    int pageSize = 10,
+  }) async {
+    try {
+      print(
+          'Getting genome preview for func_type: $funcType, page: $page, page_size: $pageSize');
+
+      final response = await _dio.get(
+        '/getGenomeFuncMatrixPreview',
+        queryParameters: {
+          'func_type': funcType,
+          'page': page,
+          'page_size': pageSize,
+        },
+      );
+
+      print('Genome preview API Response: ${response.data}');
+
+      if (response.statusCode == 200 && response.data != null) {
+        return response.data as Map<String, dynamic>;
+      } else {
+        print('Failed to get genome preview: HTTP ${response.statusCode}');
+        return null;
+      }
+    } catch (e) {
+      print('Error in getGenomeFuncMatrixPreview: $e');
+      if (e is DioException) {
+        print('DioException details: ${e.message}');
+        print('Response data: ${e.response?.data}');
+        print('Response status code: ${e.response?.statusCode}');
+      }
+      return null;
     }
   }
 
@@ -306,6 +363,46 @@ class ApiService {
     } catch (e) {
       print('Error in downloadAnnotationZipHttp: $e');
       throw Exception('HTTP download failed: ${e.toString()}');
+    }
+  }
+
+  // NEW: Get genome functional matrix preview with species name as POST data
+  static Future<Map<String, dynamic>?> getGenomeFuncMatrixPreviewWithSpecies({
+    required String funcType,
+    required String speciesName,
+    int page = 1,
+    int pageSize = 10,
+  }) async {
+    try {
+      print(
+          'Getting genome preview for func_type: $funcType, species: $speciesName, page: $page, page_size: $pageSize');
+
+      final response = await _dio.post(
+        '/getGenomeFuncMatrixPreview',
+        data: [speciesName], // Send species name as POST data array
+        queryParameters: {
+          'func_type': funcType,
+          'page': page,
+          'page_size': pageSize,
+        },
+      );
+
+      print('Genome preview API Response: ${response.data}');
+
+      if (response.statusCode == 200 && response.data != null) {
+        return response.data as Map<String, dynamic>;
+      } else {
+        print('Failed to get genome preview: HTTP ${response.statusCode}');
+        return null;
+      }
+    } catch (e) {
+      print('Error in getGenomeFuncMatrixPreviewWithSpecies: $e');
+      if (e is DioException) {
+        print('DioException details: ${e.message}');
+        print('Response data: ${e.response?.data}');
+        print('Response status code: ${e.response?.statusCode}');
+      }
+      return null;
     }
   }
 

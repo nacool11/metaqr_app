@@ -75,7 +75,8 @@ class _AnnotationFilesPageState extends State<AnnotationFilesPage> {
     });
 
     try {
-      final suggestions = await ApiService.getFuzzySearchSuggestions(prefix);
+      final suggestions =
+          await ApiService.getFuzzySearchSuggestions(prefix, 'species');
       print('Received ${suggestions.length} suggestions');
       setState(() {
         _suggestions = suggestions;
