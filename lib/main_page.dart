@@ -8,8 +8,11 @@ class MainPage extends StatelessWidget {
     final screenWidth = MediaQuery.of(context).size.width;
     final screenHeight = MediaQuery.of(context).size.height;
     final safeAreaPadding = MediaQuery.of(context).padding;
-    final availableHeight = screenHeight - safeAreaPadding.top - safeAreaPadding.bottom - 100; // Allow space for bottom navigation bar if present
-    
+    final availableHeight = screenHeight -
+        safeAreaPadding.top -
+        safeAreaPadding.bottom -
+        100; // Allow space for bottom navigation bar if present
+
     // Option titles - Removed Functionally-related species
     final List<String> optionTitles = [
       'QR Scanner',
@@ -25,7 +28,7 @@ class MainPage extends StatelessWidget {
       Icons.file_copy,
       Icons.description,
     ];
-    
+
     // Option colors - Removed Functionally-related species
     final List<Color> optionColors = [
       Colors.blue.shade400,
@@ -40,7 +43,7 @@ class MainPage extends StatelessWidget {
         backgroundColor: Colors.blue.shade400,
         elevation: 0,
         title: const Text(
-          'MetaQR', // Changed to match the screenshot
+          'MiFRiX', // Changed to match the screenshot
           style: TextStyle(
             color: Colors.white,
             fontWeight: FontWeight.bold,
@@ -57,7 +60,8 @@ class MainPage extends StatelessWidget {
       body: SingleChildScrollView(
         physics: const ClampingScrollPhysics(), // Prevent bouncing
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(16.0, 16.0, 16.0, 35.0), // Increased bottom padding to prevent overflow
+          padding: const EdgeInsets.fromLTRB(16.0, 16.0, 16.0,
+              35.0), // Increased bottom padding to prevent overflow
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -130,12 +134,13 @@ class MainPage extends StatelessWidget {
                   ],
                 ),
               ),
-              
+
               const SizedBox(height: 24),
-              
+
               // First row: Feature Profiles and QR Scanner
               SizedBox(
-                height: availableHeight * 0.38, // Increased height for better proportion
+                height: availableHeight *
+                    0.38, // Increased height for better proportion
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
@@ -168,12 +173,13 @@ class MainPage extends StatelessWidget {
                   ],
                 ),
               ),
-              
+
               const SizedBox(height: 16),
-              
+
               // Second row: Annotation Files and Description/ID
               SizedBox(
-                height: availableHeight * 0.38, // Increased height for better proportion
+                height: availableHeight *
+                    0.38, // Increased height for better proportion
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
@@ -207,7 +213,7 @@ class MainPage extends StatelessWidget {
                   ],
                 ),
               ),
-              
+
               // Additional space at bottom to prevent overflow
               const SizedBox(height: 30),
             ],
@@ -275,12 +281,14 @@ class MainPage extends StatelessWidget {
                 ),
               ),
             ),
-            
+
             // Title and tap to view with adjusted padding for smaller cards
             Positioned(
               left: compactLayout ? 16 : 20,
               bottom: compactLayout ? 16 : 20,
-              right: compactLayout ? 8 : 16, // Reduced right padding for compact layout
+              right: compactLayout
+                  ? 8
+                  : 16, // Reduced right padding for compact layout
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -292,7 +300,8 @@ class MainPage extends StatelessWidget {
                       fontSize: titleFontSize,
                     ),
                     maxLines: 2, // Limit to 2 lines for long text
-                    overflow: TextOverflow.ellipsis, // Show ellipsis if text is too long
+                    overflow: TextOverflow
+                        .ellipsis, // Show ellipsis if text is too long
                   ),
                   const SizedBox(height: 6), // Reduced space for compact layout
                   const Row(

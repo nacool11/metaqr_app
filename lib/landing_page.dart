@@ -14,9 +14,10 @@ class LandingPage extends StatelessWidget {
             Padding(
               padding: const EdgeInsets.all(20.0),
               child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Text(
-                    'MetaQR',
+                    'MiFRiX',
                     style: TextStyle(
                       fontSize: 24,
                       fontWeight: FontWeight.bold,
