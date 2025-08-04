@@ -234,7 +234,7 @@ class _AnnotationFilesPageState extends State<AnnotationFilesPage> {
 
       // Generate a unique filename with timestamp
       final timestamp = DateTime.now().millisecondsSinceEpoch;
-      final fileName = 'annotations_${timestamp}.zip';
+      final fileName = 'annotations_$timestamp.zip';
       final file = File('${downloadsDir.path}/$fileName');
 
       // Write the downloaded bytes to file

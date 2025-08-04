@@ -234,7 +234,7 @@ class _DescriptionPageState extends State<DescriptionPage> {
       // Create filename with timestamp
       final timestamp = DateTime.now().millisecondsSinceEpoch;
       final mode = toggle ? 'genomes' : 'species';
-      final filename = '${mode}_data_${timestamp}.json';
+      final filename = '${mode}_data_$timestamp.json';
 
       if (kIsWeb) {
         // For web platform, show the data in a dialog and let user copy it

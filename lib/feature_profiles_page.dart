@@ -28,7 +28,6 @@ class _FeatureProfilesPageState extends State<FeatureProfilesPage> {
     'KEGG_Reaction',
     'EC',
     'PFAMs',
-    'Combined',
   ];
 
   bool speciesLoading = false;
@@ -266,8 +265,9 @@ class _FeatureProfilesPageState extends State<FeatureProfilesPage> {
   }
 
   Future<void> _loadGenomePage(int page) async {
-    if (_selectedFunctionality == null || _lastSearchedSpeciesName.isEmpty)
+    if (_selectedFunctionality == null || _lastSearchedSpeciesName.isEmpty) {
       return;
+    }
 
     setState(() {
       genomeLoading = true;
@@ -413,12 +413,12 @@ class _FeatureProfilesPageState extends State<FeatureProfilesPage> {
         // For genome mode - CSV file for specific species
         final speciesName = _lastSearchedSpeciesName.replaceAll(' ', '_');
         fileName =
-            'genome_functional_matrix_${speciesName}_${_selectedFunctionality}_${timestamp}.csv';
+            'genome_functional_matrix_${speciesName}_${_selectedFunctionality}_$timestamp.csv';
       } else {
         // For species mode - ZIP file containing CSV files
         final organismName = _searchController.text.trim().replaceAll(' ', '_');
         fileName =
-            'species_functional_matrix_${organismName}_${_selectedFunctionality}_${timestamp}.zip';
+            'species_functional_matrix_${organismName}_${_selectedFunctionality}_$timestamp.zip';
       }
 
       final file = File('${downloadsDir.path}/$fileName');
@@ -896,7 +896,7 @@ class _FeatureProfilesPageState extends State<FeatureProfilesPage> {
                               ],
                             ),
                             const SizedBox(height: 12),
-                            Container(
+                            SizedBox(
                               height: 80,
                               child: ListView.builder(
                                 scrollDirection: Axis.horizontal,
